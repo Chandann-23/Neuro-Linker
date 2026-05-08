@@ -48,9 +48,9 @@ export function AgentPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-warm-white">
       {/* Header */}
-      <div className="p-6 border-b border-[#E0F2F1]">
+      <div className="p-6 border-b border-teal-50">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-brand-teal to-gray-400"></div>

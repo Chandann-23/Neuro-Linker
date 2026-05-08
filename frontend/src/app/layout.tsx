@@ -28,14 +28,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="flex h-screen overflow-hidden bg-white">
+        <div className="flex h-screen overflow-hidden bg-warm-white">
           {/* Left Sidebar - Agent Panel */}
-          <aside className="w-[400px] border-r border-[#E0F2F1] flex-shrink-0 bg-white">
+          <aside className="w-[400px] border-r border-teal-50 flex-shrink-0 bg-warm-white flex flex-col">
             <AgentPanel />
           </aside>
           
           {/* Right Main Area - Canvas */}
-          <main className="flex-1 overflow-auto bg-white p-8">
+          <main className="flex-1 overflow-auto bg-warm-white p-8">
             {children}
           </main>
         </div>
