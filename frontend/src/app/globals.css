@@ -2,18 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Dark Velvet Theme */
-:root {
-  --bg-dark: #030014;
-  --card-bg: #1a1b2e;
-  --accent-navy: #313866;
-  --accent-purple: #50409a;
-  --accent-violet: #964ec2;
-  --accent-pink: #ff7bbf;
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0a0;
-}
-
+/* Custom Medical-Grade Theme */
 * {
   margin: 0;
   padding: 0;
@@ -21,8 +10,8 @@
 }
 
 body {
-  background-color: var(--bg-dark);
-  color: var(--text-primary);
+  background-color: #FDFCFB;
+  color: #374151;
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
 }
