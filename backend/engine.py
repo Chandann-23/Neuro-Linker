@@ -184,36 +184,33 @@ class VectorMatcher:
                 prefer_grpc=False
             )
             
-            # Check if collection exists, delete and recreate if dimensions don't match
+            # Force reset collection to ensure clean 1024-dim state
             collections = self.qdrant_client.get_collections().collections
             collection_exists = any(c.name == self.collection_name for c in collections)
             
+            # Always delete existing collection for clean slate
             if collection_exists:
-                # Check existing collection dimensions
                 try:
-                    existing_collection = self.qdrant_client.get_collection(self.collection_name)
-                    existing_vector_size = existing_collection.config.params.vectors.size
-                    if existing_vector_size != 1024:  # BGE-M3 dimension
-                        self.logger.info(f"Deleting existing collection with {existing_vector_size} dimensions, recreating with 1024")
-                        self.qdrant_client.delete_collection(self.collection_name)
-                        collection_exists = False
+                    self.logger.info(f"Force deleting existing collection for clean 1024-dim reset")
+                    self.qdrant_client.delete_collection(self.collection_name)
+                    collection_exists = False
                 except Exception as e:
-                    self.logger.warning(f"Could not check collection dimensions: {e}")
+                    self.logger.warning(f"Could not delete collection: {e}")
             
-            if not collection_exists:
-                self.qdrant_client.create_collection(
-                    collection_name=self.collection_name,
-                    vectors_config=VectorParams(
-                        size=1024,  # BGE-M3 dimension
-                        distance=Distance.COSINE
-                    ),
-                    hnsw_config={
-                        "m": 16,
-                        "ef_construct": 64,
-                        "full_scan_threshold": 10000
-                    }
-                )
-                self.logger.info(f"Created collection {self.collection_name} with 1024 dimensions")
+            # Create new collection with 1024 dimensions
+            self.qdrant_client.create_collection(
+                collection_name=self.collection_name,
+                vectors_config=VectorParams(
+                    size=1024,  # BGE-M3 dimension
+                    distance=Distance.COSINE
+                ),
+                hnsw_config={
+                    "m": 16,
+                    "ef_construct": 64,
+                    "full_scan_threshold": 10000
+                }
+            )
+            self.logger.info(f"Created collection {self.collection_name} with 1024 dimensions")
             
             return True
         except Exception as e:
