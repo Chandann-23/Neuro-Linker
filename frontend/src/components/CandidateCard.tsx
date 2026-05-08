@@ -28,7 +28,7 @@ export function CandidateCard({ candidate }: CandidateCardProps) {
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-dark-teal mb-1">{candidate.name}</h3>
+          <h3 className="text-lg font-semibold text-[#004D40] mb-1">{candidate.name}</h3>
           <p className="text-gray-600 mb-2">{candidate.currentRole}</p>
           <div className="flex items-center space-x-4 text-sm text-gray-500">
             <div className="flex items-center space-x-1">
@@ -48,7 +48,7 @@ export function CandidateCard({ candidate }: CandidateCardProps) {
         
         {/* Match Score Badge */}
         <div className="flex flex-col items-end">
-          <div className={`px-3 py-1 rounded-full text-white text-sm font-medium bg-match border border-[2px]`}>
+          <div className={`px-3 py-1 rounded-full text-white text-sm font-bold bg-match border border-[2px]`}>
             {candidate.matchScore}% Match
           </div>
         </div>

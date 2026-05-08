@@ -48,15 +48,15 @@ export function AgentPanel() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-sidebar">
+    <div className="flex flex-col h-full" style={{backgroundColor: '#F4F8F8'}}>
       {/* Header */}
       <div className="p-6 border-b border-teal-50">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col gap-1 mb-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-brand-teal to-gray-400"></div>
-            <h1 className="text-4xl font-black tracking-tighter text-dark-teal">SYNAPSE</h1>
+            <h1 className="text-3xl font-black text-[#004D40]">SYNAPSE</h1>
           </div>
-          <div className="text-xs font-mono text-brand-teal">SYNAPTIC CORE: ACTIVE</div>
+          <div className="text-[10px] tracking-[0.2em] font-mono text-[#008080]">SYNAPTIC CORE: ACTIVE</div>
         </div>
         
         {/* Tabs */}
@@ -91,21 +91,16 @@ export function AgentPanel() {
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${
+                message.type === 'ai' ? 'justify-start' : 'justify-end'
+              } mb-4`}
             >
-              <div
-                className={`max-w-xs px-4 py-3 rounded-2xl ${
-                  message.type === 'user'
-                    ? 'bg-brand-teal text-white'
-                    : 'bg-soft-teal text-gray-800 shadow-glass'
-                }`}
-              >
+              <div className={`max-w-[80%] px-4 py-3 rounded-2xl border ${
+                message.type === 'ai' 
+                  ? 'bg-[#E0F2F1] text-gray-800 border-[#E0F2F1]' 
+                  : 'bg-white text-gray-800 border-[#E0F2F1]'
+              }`}>
                 <p className="text-sm">{message.content}</p>
-                <p className={`text-xs mt-1 ${
-                  message.type === 'user' ? 'text-teal-100' : 'text-gray-500'
-                }`}>
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
               </div>
             </div>
           ))}
@@ -120,17 +115,19 @@ export function AgentPanel() {
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-              placeholder="Describe your ideal candidate..."
-              className="w-full px-4 py-3 pr-12 bg-white border border-teal-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-teal focus:border-transparent"
+              onKeyPress={handleKeyPress}
+              placeholder="Ask about candidates..."
+              className="w-full px-4 py-3 bg-white border border-[#E0F2F1] rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-teal"
             />
-            <Sparkles className="absolute right-3 top-3.5 h-5 w-5 text-brand-teal" />
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <Sparkles size={16} className="text-gray-400" />
+            </div>
           </div>
           <button
-            onClick={handleSendMessage}
-            className="p-3 bg-brand-teal text-white rounded-xl hover:bg-teal-700 transition-colors"
+            onClick={handleSend}
+            className="px-6 py-3 bg-brand-teal text-white rounded-lg hover:bg-teal-700 transition-colors"
           >
-            <Send size={16} />
+            Send
           </button>
         </div>
       </div>
