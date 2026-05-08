@@ -3,7 +3,12 @@
 import { Database, Zap, Users, Clock } from 'lucide-react'
 
 interface SystemMetricsProps {
-  metrics: any
+  metrics: {
+    total_documents: number
+    total_chunks: number
+    active_tasks: number
+    average_latency: number
+  }
 }
 
 export function SystemMetrics({ metrics }: SystemMetricsProps) {

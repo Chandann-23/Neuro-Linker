@@ -2,9 +2,18 @@
 
 import { useState } from 'react'
 import { User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Star, Target, Brain } from 'lucide-react'
+import Image from 'next/image'
+
+interface SearchResult {
+  filename: string
+  score: number
+  semantic_score: number
+  keyword_score: number
+  matched_chunk: string
+}
 
 interface SearchResultsProps {
-  results: any[]
+  results: SearchResult[]
   onFeedback: (filename: string, feedback: boolean, score: number) => void
 }
 
@@ -58,10 +67,12 @@ export function SearchResults({ results, onFeedback }: SearchResultsProps) {
         <div key={result.filename} className="result-card fade-in">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-4">
-              <img
+              <Image
                 src={getAvatarUrl(result.filename)}
                 alt={result.filename}
-                className="w-16 h-16 rounded-full border-2"
+                width={50}
+                height={50}
+                className="rounded-full border-2"
                 style={{ borderColor: 'var(--accent-pink)' }}
               />
               <div>

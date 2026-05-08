@@ -5,7 +5,7 @@ import { Upload, FileText, CheckCircle, AlertCircle, Clock } from 'lucide-react'
 
 interface UploadZoneProps {
   onUpload: (files: File[]) => void
-  uploadProgress: { [key: string]: any }
+  uploadProgress: { [key: string]: { status: string; processed_files: number; total_files: number; message?: string } }
 }
 
 export function UploadZone({ onUpload, uploadProgress }: UploadZoneProps) {

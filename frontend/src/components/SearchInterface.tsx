@@ -3,8 +3,14 @@
 import { useState } from 'react'
 import { Search, Settings, BarChart3 } from 'lucide-react'
 
+interface SearchOptions {
+  topK: number
+  alpha: number
+  filters: Record<string, unknown>
+}
+
 interface SearchInterfaceProps {
-  onSearch: (query: string, options: any) => void
+  onSearch: (query: string, options: SearchOptions) => void
   isSearching: boolean
 }
 
