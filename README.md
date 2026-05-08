@@ -6,6 +6,82 @@ colorTo: gray
 sdk: docker
 pinned: false
 ---
+
+# 🧬 NEURO-LINKER: Production-Grade Semantic Recruitment System
+
+Transformed from Streamlit prototype to a scalable, production-ready microservices architecture with modern observability and deployment capabilities.
+
+---
+
+## 🚀 Architecture Overview
+
+### Backend (FastAPI + Qdrant + LangSmith)
+- **FastAPI**: Async REST API with background task processing
+- **Qdrant**: Production-grade vector database with HNSW indexing
+- **LangSmith**: Observability and MLOps tracking
+- **PostgreSQL**: Analytics and feedback storage
+- **Redis**: Background task queue
+
+### Frontend (Next.js 15 + Tailwind CSS)
+- **Modern UI**: Dark Velvet theme with glassmorphism effects
+- **Real-time**: Progress tracking and live updates
+- **Responsive**: Mobile-first design with Tailwind CSS
+- **Interactive**: Charts, file upload, and feedback system
+
+---
+
+## 🛠️ Development Setup
+
+### Prerequisites
+- Python 3.9+
+- Node.js 18+
+- Docker & Docker Compose
+
+### Installation
+```bash
+# Clone repository
+git clone https://github.com/Chandann-23/Neuro-Linker.git
+cd Neuro-Linker
+
+# Backend setup
+cd backend
+pip install -r requirements.txt
+
+# Frontend setup
+cd frontend
+npm install
+npm run dev
+```
+
+---
+
+## 📊 API Endpoints
+
+### Core Routes
+- `POST /upload` - Batch PDF processing
+- `POST /upload-single` - Single file upload
+- `POST /upload-resume` - Complete resume processing pipeline
+- `GET /status/{task_id}` - Task status tracking
+- `POST /search` - Agentic GLM 5.1 search with 200K context
+- `GET /health` - System health check
+- `GET /metrics` - Performance monitoring
+
+---
+
+## 🚀 Deployment
+
+### Hugging Face Spaces
+- **SDK**: fastapi
+- **App File**: backend/main.py
+- **Requirements**: requirements.txt (root directory)
+- **Dependencies**: zhipuai>=2.0.1, qdrant-client, pypdf2, sentence-transformers
+
+### Environment Variables
+- `ZHIPU_API_KEY` - Zhipu AI authentication
+- `QDRANT_URL` - Vector database URL
+- `QDRANT_API_KEY` - Qdrant authentication
+
+---
 # 🧬 NEURO-LINKER: Production-Grade Semantic Recruitment System
 
 Transformed from Streamlit prototype to a scalable, production-ready microservices architecture with modern observability and deployment capabilities.

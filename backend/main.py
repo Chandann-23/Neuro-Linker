@@ -8,6 +8,8 @@ import uuid
 import asyncio
 import logging
 import traceback
+import subprocess
+import sys
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +17,14 @@ from pydantic import BaseModel
 import uvicorn
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-from zhipuai import ZhipuAI
+
+# Force install zhipuai if not available
+try:
+    from zhipuai import ZhipuAI
+except ImportError:
+    logging.error("zhipuai not found, installing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "zhipuai>=2.0.1"])
+    from zhipuai import ZhipuAI
 
 # Load environment variables
 load_dotenv()
