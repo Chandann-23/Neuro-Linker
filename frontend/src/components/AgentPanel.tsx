@@ -21,9 +21,10 @@ export function AgentPanel() {
     }
   ])
   const [inputValue, setInputValue] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSendMessage = () => {
-    if (inputValue.trim()) {
+  const handleSendMessage = async () => {
+    if (inputValue.trim() && !isLoading) {
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'user',
@@ -33,17 +34,46 @@ export function AgentPanel() {
       
       setMessages(prev => [...prev, userMessage])
       setInputValue('')
+      setIsLoading(true)
       
-      // Simulate AI response
-      setTimeout(() => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: inputValue,
+            conversation_history: messages.slice(-5) // Send last 5 messages for context
+          })
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to send message')
+        }
+
+        const data = await response.json()
+        
         const aiMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           type: 'ai',
-          content: 'I\'m searching our database for qualified candidates. Let me analyze the requirements and find the best matches for you.',
+          content: data.response || 'I\'m searching our database for qualified candidates. Let me analyze the requirements and find the best matches for you.',
           timestamp: new Date()
         }
+        
         setMessages(prev => [...prev, aiMessage])
-      }, 1000)
+      } catch (error) {
+        console.error('Error sending message:', error)
+        const errorMessage: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: 'Sorry, I encountered an error. Please try again.',
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, errorMessage])
+      } finally {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -127,17 +157,33 @@ export function AgentPanel() {
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Ask about candidates..."
-              className="w-full px-4 py-3 bg-white border border-[#E0F2F1] rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-teal"
+              disabled={isLoading}
+              className="w-full px-4 py-3 bg-white border border-[#E0F2F1] rounded-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-teal disabled:opacity-50"
             />
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <Sparkles size={16} className="text-gray-400" />
+              {isLoading ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-transparent"></div>
+              ) : (
+                <Sparkles size={16} className="text-gray-400" />
+              )}
             </div>
           </div>
           <button
             onClick={handleSend}
-            className="px-6 py-3 bg-brand-teal text-white rounded-lg hover:bg-teal-700 transition-colors"
+            disabled={isLoading}
+            className="px-6 py-3 bg-brand-teal text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
           >
-            Send
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-transparent"></div>
+                <span>Thinking...</span>
+              </>
+            ) : (
+              <>
+                <Send size={16} />
+                <span>Send</span>
+              </>
+            )}
           </button>
         </div>
       </div>
