@@ -19,4 +19,4 @@ redis==5.0.1
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 huggingface_hub>=0.26.0
-fitz>=16.17.0
+PyMuPDF==1.24.2
