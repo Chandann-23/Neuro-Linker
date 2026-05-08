@@ -3,8 +3,8 @@ title: Neuro-Linker API
 emoji: 🧠
 colorFrom: indigo
 colorTo: gray
-sdk: docker
-pinned: false
+sdk: fastapi
+app_file: main.py
 ---
 
 # 🧬 NEURO-LINKER: Production-Grade Semantic Recruitment System

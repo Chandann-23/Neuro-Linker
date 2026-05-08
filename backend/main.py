@@ -18,13 +18,15 @@ import uvicorn
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
+# Add current directory to path just in case
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 # Force install zhipuai if not available
 try:
     from zhipuai import ZhipuAI
-except ImportError:
-    logging.error("zhipuai not found, installing...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "zhipuai>=2.0.1"])
-    from zhipuai import ZhipuAI
+except ImportError as e:
+    print(f"CRITICAL: zhipuai not found in path: {sys.path}")
+    raise e
 
 # Load environment variables
 load_dotenv()
