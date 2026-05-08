@@ -252,6 +252,19 @@ async def search_candidates(request: SearchRequest):
     try:
         start_time = time.perf_counter()
         
+        # Validate Qdrant collection exists before searching
+        if not matcher or not matcher.qdrant_client:
+            return [
+                SearchResult(
+                    filename="Vector store not initialized",
+                    score=0.0,
+                    semantic_score=0.0,
+                    keyword_score=0.0,
+                    matched_chunk="",
+                    content_preview="Please upload some resumes first to initialize the vector database."
+                )
+            ]
+        
         # First get top 10 candidates from vector store
         vector_results = await matcher.search_async(
             query=request.query,
@@ -296,22 +309,30 @@ Please perform a comparative analysis and:
 
 Focus on finding the best match for the recruitment needs. Be thorough but concise."""
 
-        # Call GLM 5.1 for agentic analysis
-        response = glm_client.chat.completions.create(
-            model="glm-4",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are an expert AI recruitment analyst specializing in candidate evaluation and matching."
-                },
-                {
-                    "role": "user",
-                    "content": agentic_prompt
-                }
-            ],
-            max_tokens=2000,
-            temperature=0.3
-        )
+        # Call GLM 5.1 for agentic analysis with detailed error logging
+        try:
+            response = glm_client.chat.completions.create(
+                model="glm-4",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert AI recruitment analyst specializing in candidate evaluation and matching."
+                    },
+                    {
+                        "role": "user",
+                        "content": agentic_prompt
+                    }
+                ],
+                max_tokens=2000,
+                temperature=0.3
+            )
+        except Exception as glm_error:
+            logging.error(f"GLM 5.1 API call failed: {str(glm_error)}")
+            logging.error(f"Full GLM error traceback: {traceback.format_exc()}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"GLM 5.1 API Error: {str(glm_error)}. Check logs for full traceback."
+            )
         
         glm_result = response.choices[0].message.content
         
