@@ -49,7 +49,8 @@ async def get_glm_client():
     global glm_client
     if glm_client is None:
         glm_client = ZhipuAI(
-            api_key=os.getenv('ZHIPU_API_KEY')
+            api_key=os.getenv('ZHIPU_API_KEY'),
+            base_url="https://open.bigmodel.cn/api/paas/v4/"
         )
     return glm_client
 
@@ -328,8 +329,10 @@ Focus on finding the best match for the recruitment needs. Be thorough but conci
 
         # Call GLM 5.1 for agentic analysis with detailed error logging
         try:
+            model_name = "glm-4"  # Using stable GLM-4 model
+            print(f"Attempting GLM call with model: {model_name}")
             response = glm_client.chat.completions.create(
-                model="glm-4",
+                model=model_name,
                 messages=[
                     {
                         "role": "system",
