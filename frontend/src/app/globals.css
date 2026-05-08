@@ -16,35 +16,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Force Tailwind classes to be applied */
-.bg-warm-white {
-  background-color: #FDFCFB !important;
-}
-
-.bg-soft-teal {
-  background-color: #E0F2F1 !important;
-}
-
-.bg-brand-teal {
-  background-color: #008080 !important;
-}
-
-.text-brand-teal {
-  color: #008080 !important;
-}
-
-.border-teal-50 {
-  border-color: rgba(0, 128, 128, 0.05) !important;
-}
-
-.border-teal-200 {
-  border-color: rgba(0, 128, 128, 0.2) !important;
-}
-
-.shadow-glass {
-  box-shadow: 0 4px 6px -1px rgba(0, 128, 128, 0.1), 0 2px 4px -1px rgba(0, 128, 128, 0.06) !important;
-}
-
 /* Glassmorphism effects */
 .glass {
   background: rgba(26, 27, 46, 0.7);
