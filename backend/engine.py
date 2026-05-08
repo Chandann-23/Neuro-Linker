@@ -319,11 +319,11 @@ class VectorMatcher:
         
         # Extract semantic scores and chunk info
         semantic_scores = {}
-        chunk_info = {}
+        chunk_info = []
         for hit in search_result:
             filename = hit.payload.get('filename')
             semantic_scores[hit.id] = hit.score
-            chunk_info[hit.id] = hit.payload
+            chunk_info.append(hit.payload)
 
         # 2. Keyword Search Score (Chunk-level)
         query_tfidf = self.tfidf_vectorizer.transform([query])
@@ -334,7 +334,9 @@ class VectorMatcher:
         chunk_index = 0
         for i, metadata in enumerate(self.chunk_metadata):
             filename = metadata.get('filename', f'doc_{i}')
-            chunk_id = f"{filename}_{chunk_index % len([c for c in chunk_info if c.get('filename') == filename])}"
+            # Safety check for chunk_info - ensure we're working with dictionaries
+            matching_chunks = [c for c in chunk_info if isinstance(c, dict) and c.get('filename') == filename]
+            chunk_id = f"{filename}_{chunk_index % max(1, len(matching_chunks))}"
             if chunk_index < len(keyword_scores):
                 keyword_scores_dict[chunk_id] = keyword_scores[chunk_index]
             chunk_index += 1
