@@ -24,7 +24,7 @@ export function CandidateCard({ candidate }: CandidateCardProps) {
   }
 
   return (
-    <div className="bg-white border border-teal-50 rounded-xl p-6 hover:shadow-glass hover:border-brand-teal transition-all duration-200 group">
+    <div className="bg-white border border-teal-200 rounded-2xl p-6 hover:shadow-glass hover:border-brand-teal transition-all duration-200 group">
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">

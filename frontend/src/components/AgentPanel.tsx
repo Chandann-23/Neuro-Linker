@@ -54,7 +54,7 @@ export function AgentPanel() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-brand-teal to-gray-400"></div>
-            <h1 className="text-xl font-serif text-gray-800">SYNAPSE</h1>
+            <h1 className="text-2xl font-bold font-serif text-gray-800">SYNAPSE</h1>
           </div>
           <div className="text-xs font-mono text-brand-teal">SYNAPTIC CORE: ACTIVE</div>
         </div>

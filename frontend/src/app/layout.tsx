@@ -30,12 +30,12 @@ export default function RootLayout({
       >
         <div className="flex h-screen overflow-hidden bg-warm-white">
           {/* Left Sidebar - Agent Panel */}
-          <aside className="w-96 border-r border-teal-50 flex-shrink-0">
+          <aside className="w-96 border-r border-teal-50 flex-shrink-0 bg-warm-white">
             <AgentPanel />
           </aside>
           
           {/* Right Main Area - Canvas */}
-          <main className="flex-1 overflow-auto">
+          <main className="flex-1 overflow-auto bg-warm-white">
             {children}
           </main>
         </div>
