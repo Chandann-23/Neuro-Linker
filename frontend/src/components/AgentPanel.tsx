@@ -16,7 +16,7 @@ export function AgentPanel() {
     {
       id: '1',
       type: 'ai',
-      content: 'Hello! I\'m your AI recruitment assistant. I can help you find the perfect candidates for your open positions. What role are you looking to fill?',
+      content: 'Hello! I\'m your NEURO-LINKER AI assistant. I can help you find the perfect candidates for your open positions. What role are you looking to fill?',
       timestamp: new Date()
     }
   ])
@@ -37,14 +37,15 @@ export function AgentPanel() {
       setIsLoading(true)
       
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/chat`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/search`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            message: inputValue,
-            conversation_history: messages.slice(-5) // Send last 5 messages for context
+            query: inputValue,
+            top_k: 5,
+            alpha: 0.7
           })
         })
 
@@ -54,10 +55,18 @@ export function AgentPanel() {
 
         const data = await response.json()
         
+        // Format search results as AI response
+        const searchResults = Array.isArray(data) ? data : []
+        const responseText = searchResults.length > 0 
+          ? `I found ${searchResults.length} candidates matching your query:\n\n${searchResults.map((result, index) => 
+              `${index + 1}. **${result.filename}** (Score: ${result.score.toFixed(2)})\n   ${result.content_preview}`
+            ).join('\n\n')}`
+          : 'I couldn\'t find any candidates matching your query. Please try different keywords.'
+        
         const aiMessage: ChatMessage = {
           id: (Date.now() + 1).toString(),
           type: 'ai',
-          content: data.response || 'I\'m searching our database for qualified candidates. Let me analyze the requirements and find the best matches for you.',
+          content: responseText,
           timestamp: new Date()
         }
         
@@ -94,9 +103,9 @@ export function AgentPanel() {
         <div className="flex flex-col gap-1 mb-4">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-brand-teal to-gray-400"></div>
-            <h1 className="text-3xl font-black text-[#004D40]">SYNAPSE</h1>
+            <h1 className="text-3xl font-black text-[#004D40]">NEURO-LINKER</h1>
           </div>
-          <div className="text-[10px] tracking-[0.2em] font-mono text-[#008080]">SYNAPTIC CORE: ACTIVE</div>
+          <div className="text-[10px] tracking-[0.2em] font-mono text-[#008080]">AI CORE: ACTIVE</div>
         </div>
         
         {/* Tabs */}

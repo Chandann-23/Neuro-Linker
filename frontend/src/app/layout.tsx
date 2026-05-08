@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SYNAPSE - Enterprise AI Recruitment",
-  description: "Medical-grade AI recruitment platform",
+  title: "NEURO-LINKER - Enterprise AI Recruitment",
+  description: "Production-grade AI recruitment platform",
 };
 
 export default function RootLayout({
