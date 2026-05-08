@@ -22,9 +22,10 @@ export function AgentPanel() {
   ])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const handleSendMessage = async () => {
-    if (inputValue.trim() && !isLoading) {
+    if (inputValue.trim() && !isLoading && !isProcessing) {
       const userMessage: ChatMessage = {
         id: Date.now().toString(),
         type: 'user',
@@ -35,6 +36,16 @@ export function AgentPanel() {
       setMessages(prev => [...prev, userMessage])
       setInputValue('')
       setIsLoading(true)
+      setIsProcessing(true)
+      
+      // Add neural processing message
+      const processingMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: '🧠 Neural Processing: Analyzing candidates with GLM 5.1...',
+        timestamp: new Date()
+      }
+      setMessages(prev => [...prev, processingMessage])
       
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/search`, {
@@ -55,16 +66,19 @@ export function AgentPanel() {
 
         const data = await response.json()
         
+        // Remove processing message and add final result
+        setMessages(prev => prev.filter(msg => msg.id !== processingMessage.id))
+        
         // Format search results as AI response
         const searchResults = Array.isArray(data) ? data : []
         const responseText = searchResults.length > 0 
-          ? `I found ${searchResults.length} candidates matching your query:\n\n${searchResults.map((result, index) => 
+          ? `🎯 **Agentic Analysis Complete**\n\n${searchResults.map((result, index) => 
               `${index + 1}. **${result.filename}** (Score: ${result.score.toFixed(2)})\n   ${result.content_preview}`
             ).join('\n\n')}`
           : 'I couldn\'t find any candidates matching your query. Please try different keywords.'
         
         const aiMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
+          id: (Date.now() + 2).toString(),
           type: 'ai',
           content: responseText,
           timestamp: new Date()
@@ -73,8 +87,12 @@ export function AgentPanel() {
         setMessages(prev => [...prev, aiMessage])
       } catch (error) {
         console.error('Error sending message:', error)
+        
+        // Remove processing message and add error
+        setMessages(prev => prev.filter(msg => msg.id !== processingMessage.id))
+        
         const errorMessage: ChatMessage = {
-          id: (Date.now() + 1).toString(),
+          id: (Date.now() + 2).toString(),
           type: 'ai',
           content: 'Sorry, I encountered an error. Please try again.',
           timestamp: new Date()
@@ -82,6 +100,7 @@ export function AgentPanel() {
         setMessages(prev => [...prev, errorMessage])
       } finally {
         setIsLoading(false)
+        setIsProcessing(false)
       }
     }
   }
@@ -179,13 +198,13 @@ export function AgentPanel() {
           </div>
           <button
             onClick={handleSend}
-            disabled={isLoading}
+            disabled={isLoading || isProcessing}
             className="px-6 py-3 bg-brand-teal text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
           >
-            {isLoading ? (
+            {(isLoading || isProcessing) ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-transparent"></div>
-                <span>Thinking...</span>
+                <span>{isProcessing ? 'Neural Processing...' : 'Thinking...'}</span>
               </>
             ) : (
               <>

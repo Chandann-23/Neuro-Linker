@@ -13,6 +13,8 @@ from pydantic import BaseModel
 import uvicorn
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+import httpx
+import json
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +27,19 @@ from observability import observability, db_logger
 # Global variables
 matcher: Optional[VectorMatcher] = None
 task_store: Dict[str, TaskStatus] = {}
+
+# GLM 5.1 Client
+glm_client = None
+
+async def get_glm_client():
+    """Initialize GLM 5.1 client"""
+    global glm_client
+    if glm_client is None:
+        glm_client = httpx.AsyncClient(
+            base_url="https://api.z.ai/api/paas/v4",
+            headers={"Authorization": f"Bearer {os.getenv('ZHIPU_API_KEY')}"}
+        )
+    return glm_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -113,22 +128,72 @@ async def get_task_status(task_id: str):
     
     return task_store[task_id]
 
-# Search endpoint
+# Agentic Search endpoint with GLM 5.1
 @app.post("/search", response_model=List[SearchResult])
 async def search_candidates(request: SearchRequest):
-    """Search for candidates using hybrid semantic search"""
+    """Agentic search using GLM 5.1 with 200K context window"""
     if not matcher:
         raise HTTPException(status_code=503, detail="Vector store not initialized")
     
     try:
         start_time = time.perf_counter()
         
-        results = await matcher.search_async(
+        # First get top 10 candidates from vector store
+        vector_results = await matcher.search_async(
             query=request.query,
-            top_k=request.top_k,
+            top_k=10,
             alpha=request.alpha,
             filters=request.filters
         )
+        
+        # Get GLM 5.1 client
+        client = await get_glm_client()
+        
+        # Prepare candidate context for GLM analysis
+        candidate_context = "\n\n".join([
+            f"Candidate {i+1}: {result['filename']}\nContent: {result['content'][:1000]}...\nScore: {result['score']}"
+            for i, result in enumerate(vector_results[:10])
+        ])
+        
+        # Agentic prompt for GLM 5.1
+        agentic_prompt = f"""You are an expert AI recruitment analyst. Analyze these 10 candidates for the query: "{request.query}"
+
+CANDIDATES:
+{candidate_context}
+
+Please perform a comparative analysis and:
+1. Rank the top 5 candidates by relevance
+2. Explain why each candidate is a good fit
+3. Highlight key skills and experience
+4. Provide reasoning for your rankings
+
+Focus on finding the best match for the recruitment needs. Be thorough but concise."""
+
+        # Call GLM 5.1 for agentic analysis
+        response = await client.post(
+            "/chat/completions",
+            json={
+                "model": "glm-5-1",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are an expert AI recruitment analyst specializing in candidate evaluation and matching."
+                    },
+                    {
+                        "role": "user",
+                        "content": agentic_prompt
+                    }
+                ],
+                "max_tokens": 2000,
+                "temperature": 0.3
+            }
+        )
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail="GLM API call failed")
+        
+        glm_result = response.json()
+        ai_analysis = glm_result["choices"][0]["message"]["content"]
         
         end_time = time.perf_counter()
         latency_ms = (end_time - start_time) * 1000
@@ -136,22 +201,25 @@ async def search_candidates(request: SearchRequest):
         # Trace search with LangSmith
         await observability.trace_search(
             query=request.query,
-            results=results,
+            results=vector_results,
             semantic_weight=request.alpha,
             keyword_weight=1 - request.alpha,
             latency_ms=latency_ms,
-            filters=request.filters
+            filters=request.filters,
+            ai_analysis=ai_analysis
         )
         
         # Log metrics to database
         await db_logger.log_search_metrics({
             "query": request.query,
-            "results_count": len(results),
-            "top_confidence": results[0]["score"] if results else 0.0,
+            "results_count": len(vector_results),
+            "top_confidence": vector_results[0]["score"] if vector_results else 0.0,
             "latency_ms": latency_ms,
-            "filters": request.filters
+            "filters": request.filters,
+            "ai_analysis": ai_analysis
         })
         
+        # Return top 5 vector results with enhanced content
         return [
             SearchResult(
                 filename=result["filename"],
@@ -159,13 +227,13 @@ async def search_candidates(request: SearchRequest):
                 semantic_score=result["semantic_score"],
                 keyword_score=result["keyword_score"],
                 matched_chunk=result["matched_chunk"],
-                content_preview=result["content"][:500] + "..." if len(result["content"]) > 500 else result["content"]
+                content_preview=f"{ai_analysis}\n\n**{result['filename']}**\n{result['content'][:300]}..."
             )
-            for result in results
+            for result in vector_results[:5]
         ]
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Agentic search failed: {str(e)}")
 
 # Analysis endpoint
 @app.post("/analyze")
