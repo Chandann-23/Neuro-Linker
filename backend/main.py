@@ -15,7 +15,7 @@ from pydantic import BaseModel
 import uvicorn
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-import zhipuai
+from zhipuai import ZhipuAI
 
 # Load environment variables
 load_dotenv()
@@ -36,7 +36,7 @@ async def get_glm_client():
     """Initialize GLM 5.1 client"""
     global glm_client
     if glm_client is None:
-        glm_client = zhipuai.ZhipuAI(
+        glm_client = ZhipuAI(
             api_key=os.getenv('ZHIPU_API_KEY')
         )
     return glm_client
@@ -199,7 +199,7 @@ Please perform a comparative analysis and:
 Focus on finding the best match for the recruitment needs. Be thorough but concise."""
 
         # Call GLM 5.1 for agentic analysis
-        response = await client.chat.completions.create(
+        response = glm_client.chat.completions.create(
             model="glm-4",
             messages=[
                 {
@@ -216,7 +216,6 @@ Focus on finding the best match for the recruitment needs. Be thorough but conci
         )
         
         glm_result = response.choices[0].message.content
-        ai_analysis = glm_result
         
         end_time = time.perf_counter()
         latency_ms = (end_time - start_time) * 1000
