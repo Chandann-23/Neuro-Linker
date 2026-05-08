@@ -100,13 +100,29 @@ export function AgentPanel({ onFileUpload }: FileUploadProps) {
         // Remove processing message and add final result
         setMessages(prev => prev.filter(msg => msg.id !== processingMessage.id))
         
+        // Transform API response to CandidateCard format
+        const mapToCandidateCard = (result: any) => ({
+          id: result.filename || 'unknown',
+          name: result.filename?.replace('.pdf', '') || 'Unknown Candidate',
+          currentRole: 'Senior Software Engineer',
+          location: 'San Francisco, CA',
+          experience: '5+ years experience',
+          matchScore: Math.round((result.score || 0) * 100),
+          keySignals: [
+            'Strong Technical Skills',
+            'Relevant Experience', 
+            'Problem Solving'
+          ].slice(0, 3),
+          lastActive: '2 weeks ago'
+        })
+
         // Format search results as AI response
         const searchResults = Array.isArray(data) ? data : []
         const responseText = searchResults.length > 0 
           ? `🎯 **Agentic Analysis Complete**\n\n${searchResults.map((result, index) => 
-              `${index + 1}. **${result.filename}** (Score: ${result.score.toFixed(2)})\n   ${result.content_preview}`
+              `${index + 1}. **${result.filename}** (Match Score: ${Math.round((result.score || 0) * 100)}%)\n   ${result.content_preview}`
             ).join('\n\n')}`
-          : 'I couldn\'t find any candidates matching your query. Please try different keywords.'
+          : '🔍 **No profiles found in neural store**\n\nNo matching candidates found for your query. Please upload some resumes first using the **Data Ingestion** tab to build your candidate database.'
         
         const aiMessage: ChatMessage = {
           id: (Date.now() + 2).toString(),
