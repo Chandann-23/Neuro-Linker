@@ -329,29 +329,37 @@ Focus on finding the best match for the recruitment needs. Be thorough but conci
 
         # Call GLM 5.1 for agentic analysis with detailed error logging
         try:
-            model_name = "glm-4-flash"  # Using accessible GLM-4-flash model
+            model_name = "glm-4"  # Using standard GLM-4 model
             print(f"Attempting GLM call with model: {model_name}")
+            
+            # Standardized messages format
+            messages = [
+                {"role": "system", "content": "You are an expert AI recruitment analyst specializing in candidate evaluation and matching."},
+                {"role": "user", "content": agentic_prompt}
+            ]
+            
             response = glm_client.chat.completions.create(
                 model=model_name,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert AI recruitment analyst specializing in candidate evaluation and matching."
-                    },
-                    {
-                        "role": "user",
-                        "content": agentic_prompt
-                    }
-                ],
+                messages=messages,
                 max_tokens=2000,
                 temperature=0.3
             )
+            
         except Exception as glm_error:
-            logging.error(f"GLM 5.1 API call failed: {str(glm_error)}")
+            logging.error(f"GLM API call failed: {str(glm_error)}")
             logging.error(f"Full GLM error traceback: {traceback.format_exc()}")
+            
+            # Try to get response body for debugging
+            if hasattr(glm_error, 'response') and glm_error.response is not None:
+                try:
+                    response_body = glm_error.response.text
+                    logging.error(f"GLM API response body: {response_body}")
+                except:
+                    pass
+            
             raise HTTPException(
                 status_code=500, 
-                detail=f"GLM 5.1 API Error: {str(glm_error)}. Check logs for full traceback."
+                detail=f"GLM API Error: {str(glm_error)}. Check logs for full traceback."
             )
         
         glm_result = response.choices[0].message.content
