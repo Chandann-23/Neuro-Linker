@@ -44,6 +44,9 @@ task_store: Dict[str, TaskStatus] = {}
 # GLM 5.1 Client
 glm_client = None
 
+# Hugging Face Inference Client
+hf_client = None
+
 async def get_glm_client():
     """Initialize GLM 5.1 client"""
     global glm_client
@@ -53,6 +56,17 @@ async def get_glm_client():
             base_url="https://open.bigmodel.cn/api/paas/v4/"
         )
     return glm_client
+
+async def get_hf_client():
+    """Initialize Hugging Face Inference client"""
+    global hf_client
+    if hf_client is None:
+        from openai import OpenAI
+        hf_client = OpenAI(
+            base_url='https://router.huggingface.co/v1',
+            api_key=os.getenv('HF_TOKEN')
+        )
+    return hf_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -200,7 +214,7 @@ async def upload_resume(
         except Exception:
             qdrant_client.create_collection(
                 collection_name="resume_chunks",
-                vectors_config=VectorParams(size=embeddings.shape[1], distance=Distance.COSINE),
+                vectors_config=VectorParams(size=1024, distance=Distance.COSINE),
                 hnsw_config={"m": 16, "ef_construction": 256}
             )
         
@@ -327,42 +341,69 @@ Please perform a comparative analysis and:
 
 Focus on finding the best match for the recruitment needs. Be thorough but concise."""
 
-        # Call GLM 5.1 for agentic analysis with detailed error logging
+        # Call Qwen2.5-7B-Instruct via Hugging Face Inference API
         try:
-            model_name = "glm-4"  # Using standard GLM-4 model
-            print(f"Attempting GLM call with model: {model_name}")
+            hf_client = await get_hf_client()
+            model_name = "Qwen/Qwen2.5-7B-Instruct"
+            print(f"Attempting Hugging Face call with model: {model_name}")
+            
+            # Agentic prompt for Qwen2.5-7B-Instruct
+            qwen_prompt = f"""You are an expert AI recruitment analyst. Analyze these candidates for the query: "{request.query}"
+
+CANDIDATES:
+{candidate_context}
+
+Please perform a comparative analysis and:
+1. Rank the top 3 candidates by relevance
+2. Explain why each candidate is a good fit
+3. Generate "Key Fit Signals" - specific bullet points highlighting their relevant experience
+4. For candidates like Bhavana (Amazon Bengaluru), Joel (Presidency University), and Shiva (IT-AE Excellence Award), highlight these specific achievements
+
+Focus on finding the best match for the recruitment needs. Be thorough but concise.
+
+Please respond in JSON format:
+{{
+  "ranked_candidates": [
+    {{
+      "name": "candidate_name",
+      "match_percentage": 95,
+      "fit_analysis": "Detailed analysis of why they are a good match",
+      "key_fit_signals": ["Specific achievement 1", "Specific achievement 2", "Relevant skill 1"]
+    }}
+  ]
+}}"""
             
             # Standardized messages format
             messages = [
                 {"role": "system", "content": "You are an expert AI recruitment analyst specializing in candidate evaluation and matching."},
-                {"role": "user", "content": agentic_prompt}
+                {"role": "user", "content": qwen_prompt}
             ]
             
-            response = glm_client.chat.completions.create(
+            response = hf_client.chat.completions.create(
                 model=model_name,
                 messages=messages,
                 max_tokens=2000,
                 temperature=0.3
             )
             
-        except Exception as glm_error:
-            logging.error(f"GLM API call failed: {str(glm_error)}")
-            logging.error(f"Full GLM error traceback: {traceback.format_exc()}")
+        except Exception as hf_error:
+            logging.error(f"Hugging Face API call failed: {str(hf_error)}")
+            logging.error(f"Full HF error traceback: {traceback.format_exc()}")
             
             # Try to get response body for debugging
-            if hasattr(glm_error, 'response') and glm_error.response is not None:
+            if hasattr(hf_error, 'response') and hf_error.response is not None:
                 try:
-                    response_body = glm_error.response.text
-                    logging.error(f"GLM API response body: {response_body}")
+                    response_body = hf_error.response.text
+                    logging.error(f"Hugging Face API response body: {response_body}")
                 except:
                     pass
             
             raise HTTPException(
                 status_code=500, 
-                detail=f"GLM API Error: {str(glm_error)}. Check logs for full traceback."
+                detail=f"Hugging Face API Error: {str(hf_error)}. Check logs for full traceback."
             )
         
-        glm_result = response.choices[0].message.content
+        hf_result = response.choices[0].message.content
         
         end_time = time.perf_counter()
         latency_ms = (end_time - start_time) * 1000
@@ -375,7 +416,7 @@ Focus on finding the best match for the recruitment needs. Be thorough but conci
             keyword_weight=1 - request.alpha,
             latency_ms=latency_ms,
             filters=request.filters,
-            ai_analysis=ai_analysis
+            ai_analysis=hf_result
         )
         
         # Log metrics to database
@@ -385,7 +426,7 @@ Focus on finding the best match for the recruitment needs. Be thorough but conci
             "top_confidence": vector_results[0]["score"] if vector_results else 0.0,
             "latency_ms": latency_ms,
             "filters": request.filters,
-            "ai_analysis": ai_analysis
+            "ai_analysis": hf_result
         })
         
         # Return top 5 vector results with enhanced content

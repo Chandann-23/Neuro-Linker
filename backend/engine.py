@@ -151,7 +151,7 @@ class LLMAnalyzer:
 class VectorMatcher:
     """Class to handle embeddings and semantic search using Qdrant with chunking."""
 
-    def __init__(self, model_name="all-MiniLM-L6-v2"):
+    def __init__(self, model_name="BAAI/bge-m3"):
         """
         Initialize the VectorMatcher with a sentence-transformer model and Qdrant client.
 
@@ -191,7 +191,7 @@ class VectorMatcher:
                 self.qdrant_client.create_collection(
                     collection_name=self.collection_name,
                     vectors_config=VectorParams(
-                        size=384,  # MiniLM-L6-v2 dimension
+                        size=1024,  # BGE-M3 dimension
                         distance=Distance.COSINE
                     ),
                     hnsw_config={

@@ -27,6 +27,7 @@ export function AgentPanel({ onFileUpload }: FileUploadProps) {
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isNeuralAnalysis, setIsNeuralAnalysis] = useState(false)
   const [uploadStatus, setUploadStatus] = useState<string | null>(null)
 
   const handleFileUpload = async (file: File) => {
@@ -87,15 +88,16 @@ export function AgentPanel({ onFileUpload }: FileUploadProps) {
       setInputValue('')
       setIsLoading(true)
       setIsProcessing(true)
+      setIsNeuralAnalysis(true)
       
-      // Add neural processing message
-      const processingMessage: ChatMessage = {
+      // Add AI thinking message
+      const thinkingMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: '🧠 Neural Processing: Analyzing candidates with GLM 5.1...',
+        content: '🧠 Neural Processing...',
         timestamp: new Date()
       }
-      setMessages(prev => [...prev, processingMessage])
+      setMessages(prev => [...prev, thinkingMessage])
       
       try {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/search`, {
@@ -105,46 +107,40 @@ export function AgentPanel({ onFileUpload }: FileUploadProps) {
           },
           body: JSON.stringify({
             query: inputValue,
-            top_k: 5,
-            alpha: 0.7
+            alpha: 0.7,
+            filters: {}
           })
         })
-
+        
         if (!response.ok) {
-          throw new Error('Failed to send message')
+          throw new Error('Search failed')
         }
-
+        
         const data = await response.json()
         
-        // Remove processing message and add final result
-        setMessages(prev => prev.filter(msg => msg.id !== processingMessage.id))
+        // Add Neural Analysis message
+        const neuralMessage: ChatMessage = {
+          id: (Date.now() + 2).toString(),
+          type: 'ai',
+          content: '🔬 **Neural Analysis**\n\nAnalyzing candidate matches with Qwen2.5-7B-Instruct...',
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev, neuralMessage])
         
-        // Transform API response to CandidateCard format
-        const mapToCandidateCard = (result: any) => ({
-          id: result.filename || 'unknown',
-          name: result.filename?.replace('.pdf', '') || 'Unknown Candidate',
-          currentRole: 'Senior Software Engineer',
-          location: 'San Francisco, CA',
-          experience: '5+ years experience',
-          matchScore: Math.round((result.score || 0) * 100),
-          keySignals: [
-            'Strong Technical Skills',
-            'Relevant Experience', 
-            'Problem Solving'
-          ].slice(0, 3),
-          lastActive: '2 weeks ago'
-        })
-
-        // Format search results as AI response
+        // Format search results with new JSON response from Qwen
         const searchResults = Array.isArray(data) ? data : []
-        const responseText = searchResults.length > 0 
-          ? `🎯 **Agentic Analysis Complete**\n\n${searchResults.map((result, index) => 
-              `${index + 1}. **${result.filename}** (Match Score: ${Math.round((result.score || 0) * 100)}%)\n   ${result.content_preview}`
+        let responseText = ''
+        
+        if (searchResults.length > 0) {
+          responseText = `🎯 **Neural Analysis Complete**\n\nFound ${searchResults.length} candidates:\n\n${searchResults.map((result, index) => 
+              `${index + 1}. **${result.filename}**\n   📊 Match Score: ${Math.round((result.score || 0) * 100)}%\n   📄 ${result.content_preview}`
             ).join('\n\n')}`
-          : '🔍 **Database Empty**\n\nNo candidates found in vector store. Please upload resumes using the **Data Ingestion** tab to build your candidate database.'
+        } else {
+          responseText = '🔍 **Database Empty**\n\nNo candidates found in vector store. Please upload resumes using the **Data Ingestion** tab to build your candidate database.'
+        }
         
         const aiMessage: ChatMessage = {
-          id: (Date.now() + 2).toString(),
+          id: (Date.now() + 3).toString(),
           type: 'ai',
           content: responseText,
           timestamp: new Date()
@@ -152,21 +148,18 @@ export function AgentPanel({ onFileUpload }: FileUploadProps) {
         
         setMessages(prev => [...prev, aiMessage])
       } catch (error) {
-        console.error('Error sending message:', error)
-        
-        // Remove processing message and add error
-        setMessages(prev => prev.filter(msg => msg.id !== processingMessage.id))
-        
+        console.error('Search error:', error)
         const errorMessage: ChatMessage = {
           id: (Date.now() + 2).toString(),
           type: 'ai',
-          content: 'Sorry, I encountered an error. Please try again.',
+          content: '❌ **Search Error**\n\nI encountered an error while searching. Please try again or check your connection.',
           timestamp: new Date()
         }
         setMessages(prev => [...prev, errorMessage])
       } finally {
         setIsLoading(false)
         setIsProcessing(false)
+        setIsNeuralAnalysis(false)
       }
     }
   }
@@ -312,20 +305,33 @@ export function AgentPanel({ onFileUpload }: FileUploadProps) {
             </div>
           </div>
           <button
-            onClick={handleSend}
-            disabled={isLoading || isProcessing}
-            className="px-6 py-3 bg-brand-teal text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
+            onClick={handleSendMessage}
+            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+            disabled={isLoading || !inputValue.trim() || isProcessing}
+            className={`px-4 py-2 rounded-lg font-medium transition-all transform ${
+              isLoading || !inputValue.trim() || isProcessing
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-r from-brand-teal to-teal-600 text-white hover:from-teal-600 hover:to-teal-700 hover:scale-105 active:scale-95'
+            }`}
           >
-            {(isLoading || isProcessing) ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-300 border-t-transparent"></div>
-                <span>{isProcessing ? 'Neural Processing...' : 'Thinking...'}</span>
-              </>
+            {isNeuralAnalysis ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Neural Analysis...
+              </span>
+            ) : isProcessing ? (
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Neural Processing...
+              </span>
             ) : (
-              <>
-                <Send size={16} />
-                <span>Send</span>
-              </>
+              'Send'
             )}
           </button>
         </div>
