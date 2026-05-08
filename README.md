@@ -2,7 +2,7 @@
 title: Neuro-Linker API
 emoji: 🧠
 colorFrom: indigo
-colorTo: black
+colorTo: gray
 sdk: docker
 pinned: false
 ---
