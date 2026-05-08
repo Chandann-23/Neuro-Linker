@@ -148,6 +148,80 @@ async def upload_single_pdf(
         message=f"Processing {file.filename}. Use /status/{task_id} to track progress."
     )
 
+# Complete resume upload and processing route
+@app.post("/upload-resume", response_model=dict)
+async def upload_resume(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
+    """Upload and process PDF resume to vector database"""
+    if not file:
+        raise HTTPException(status_code=400, detail="No file provided")
+    
+    try:
+        # Extract text from PDF
+        import pypdf2
+        reader = pypdf2.PdfReader(file.file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text()
+        
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="No text could be extracted from PDF")
+        
+        # Generate embeddings
+        from sentence_transformers import SentenceTransformer
+        embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+        embeddings = embedding_model.encode([text])
+        
+        # Store in Qdrant
+        qdrant_client = QdrantClient(
+            url=os.getenv('QDRANT_URL', 'http://localhost:6333'),
+            api_key=os.getenv('QDRANT_API_KEY', ''),
+            prefer_grpc=False
+        )
+        
+        # Create collection if not exists
+        try:
+            qdrant_client.get_collection(collection_name="resumes")
+        except Exception:
+            qdrant_client.create_collection(
+                collection_name="resumes",
+                vectors_config=VectorParams(size=embeddings.shape[1], distance=Distance.COSINE),
+                hnsw_config={"m": 16, "ef_construction": 256}
+            )
+        
+        # Prepare points for upsert
+        points = [
+            PointStruct(
+                id=str(uuid.uuid4()),
+                vector=embedding.tolist()[0],
+                payload={
+                    "filename": file.filename,
+                    "name": file.filename.replace('.pdf', ''),
+                    "text": text[:1000] + "..." if len(text) > 1000 else text
+                }
+            )
+        ]
+        
+        # Upsert to Qdrant
+        qdrant_client.upsert(
+            collection_name="resumes",
+            points=points
+        )
+        
+        return {
+            "status": "success",
+            "message": f"Resume '{file.filename}' processed and indexed successfully",
+            "filename": file.filename,
+            "chunks_count": len(text.split('. ')) if text else 1
+        }
+        
+    except Exception as e:
+        logging.error(f"Resume processing failed: {str(e)}")
+        logging.error(f"Full traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
+
 # Status endpoint
 @app.get("/status/{task_id}", response_model=TaskStatus)
 async def get_task_status(task_id: str):
