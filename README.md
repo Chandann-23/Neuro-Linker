@@ -3,7 +3,7 @@ title: Neuro-Linker API
 emoji: 🧠
 colorFrom: indigo
 colorTo: gray
-sdk: fastapi
+sdk: docker
 app_file: main.py
 ---
 
