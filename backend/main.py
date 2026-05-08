@@ -194,10 +194,10 @@ async def upload_resume(
         
         # Create collection if not exists
         try:
-            qdrant_client.get_collection(collection_name="resumes")
+            qdrant_client.get_collection(collection_name="resume_chunks")
         except Exception:
             qdrant_client.create_collection(
-                collection_name="resumes",
+                collection_name="resume_chunks",
                 vectors_config=VectorParams(size=embeddings.shape[1], distance=Distance.COSINE),
                 hnsw_config={"m": 16, "ef_construction": 256}
             )
@@ -217,7 +217,7 @@ async def upload_resume(
         
         # Upsert to Qdrant
         qdrant_client.upsert(
-            collection_name="resumes",
+            collection_name="resume_chunks",
             points=points
         )
         
@@ -259,6 +259,19 @@ async def search_candidates(request: SearchRequest):
             alpha=request.alpha,
             filters=request.filters
         )
+        
+        # Handle empty results gracefully
+        if not vector_results:
+            return [
+                SearchResult(
+                    filename="No candidates found",
+                    score=0.0,
+                    semantic_score=0.0,
+                    keyword_score=0.0,
+                    matched_chunk="",
+                    content_preview="No matching candidates found for your query. Please upload some resumes first using the Data Ingestion tab."
+                )
+            ]
         
         # Get GLM 5.1 client
         client = await get_glm_client()
