@@ -119,6 +119,35 @@ async def upload_pdfs(
         message=f"Processing {len(files)} files. Use /status/{task_id} to track progress."
     )
 
+# Single file upload endpoint
+@app.post("/upload-single", response_model=UploadResponse)
+async def upload_single_pdf(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...)
+):
+    """Upload single PDF file for processing"""
+    if not file:
+        raise HTTPException(status_code=400, detail="No file provided")
+    
+    task_id = str(uuid.uuid4())
+    
+    # Store initial task status
+    task_store[task_id] = TaskStatus(
+        task_id=task_id,
+        status="processing",
+        total_files=1,
+        processed_files=0,
+        message=f"Processing {file.filename}..."
+    )
+    
+    # Add background task for processing
+    background_tasks.add_task(process_pdf_task, task_id, [file], task_store, matcher)
+    
+    return UploadResponse(
+        task_id=task_id,
+        message=f"Processing {file.filename}. Use /status/{task_id} to track progress."
+    )
+
 # Status endpoint
 @app.get("/status/{task_id}", response_model=TaskStatus)
 async def get_task_status(task_id: str):

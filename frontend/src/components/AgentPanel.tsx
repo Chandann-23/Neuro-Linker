@@ -1,7 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Sparkles, Send, MessageCircle } from 'lucide-react'
+import { Sparkles, Send, MessageCircle, Upload, FileText } from 'lucide-react'
+
+interface FileUploadProps {
+  onFileUpload: (file: File) => Promise<void>
+}
 
 interface ChatMessage {
   id: string
@@ -10,19 +14,46 @@ interface ChatMessage {
   timestamp: Date
 }
 
-export function AgentPanel() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'history'>('chat')
+export function AgentPanel({ onFileUpload }: FileUploadProps) {
+  const [activeTab, setActiveTab] = useState<'chat' | 'history' | 'ingest'>('chat')
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
       type: 'ai',
-      content: 'Hello! I\'m your NEURO-LINKER AI assistant. I can help you find the perfect candidates for your open positions. What role are you looking to fill?',
+      content: 'Hello! I\'m your NEURO-LINKER AI assistant. I can help you find perfect candidates for your open positions. What role are you looking to fill?',
       timestamp: new Date()
     }
   ])
   const [inputValue, setInputValue] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null)
+
+  const handleFileUpload = async (file: File) => {
+    if (!file) return
+    
+    setUploadStatus('Vectorizing PDF...')
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/upload-single`, {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        setUploadStatus('Neural Profile Synced to Vector Store')
+        setTimeout(() => setUploadStatus(null), 3000)
+      } else {
+        throw new Error('Upload failed')
+      }
+    } catch (error) {
+      setUploadStatus('Upload failed')
+      setTimeout(() => setUploadStatus(null), 3000)
+    }
+  }
 
   const handleSendMessage = async () => {
     if (inputValue.trim() && !isLoading && !isProcessing) {
@@ -150,8 +181,57 @@ export function AgentPanel() {
           >
             History
           </button>
+          <button
+            onClick={() => setActiveTab('ingest')}
+            className={`pb-2 px-1 text-sm font-medium transition-colors ${
+              activeTab === 'ingest'
+                ? 'text-brand-teal border-b-2 border-brand-teal'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Data Ingestion
+          </button>
         </div>
       </div>
+
+      {/* Data Ingestion Tab */}
+      {activeTab === 'ingest' && (
+        <div className="flex-1 p-6">
+          <div className="border-2 border-dashed border-teal-200 rounded-lg p-6">
+            <div className="text-center mb-4">
+              <Upload size={48} className="mx-auto text-teal-600 mb-2" />
+              <h3 className="text-lg font-semibold text-dark-teal mb-2">Data Ingestion</h3>
+              <p className="text-sm text-gray-600 mb-4">Upload PDF resumes to vector database</p>
+            </div>
+            
+            <div className="border-2 border-dashed border-teal-200 rounded-lg p-4">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) {
+                    handleFileUpload(file)
+                  }
+                }}
+                className="w-full px-4 py-3 bg-white border border-teal-200 rounded-lg text-sm file:mr-4 file:pdf hover:bg-teal-50 cursor-pointer"
+              />
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Choose PDF file or drag and drop
+              </label>
+            </div>
+            
+            {uploadStatus && (
+              <div className="mt-4 p-3 bg-teal-50 rounded-lg border border-teal-200">
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-teal-600 border-t-transparent"></div>
+                  <span className="text-sm text-teal-700">{uploadStatus}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Chat Messages */}
       {activeTab === 'chat' && (
