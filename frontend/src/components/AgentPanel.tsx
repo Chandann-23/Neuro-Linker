@@ -47,6 +47,16 @@ export function AgentPanel() {
     }
   }
 
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && inputValue.trim()) {
+      handleSendMessage()
+    }
+  }
+
+  const handleSend = () => {
+    handleSendMessage()
+  }
+
   return (
     <div className="flex flex-col h-full" style={{backgroundColor: '#F4F8F8'}}>
       {/* Header */}
