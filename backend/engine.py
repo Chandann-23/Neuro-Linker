@@ -319,11 +319,11 @@ class VectorMatcher:
         
         # Extract semantic scores and chunk info
         semantic_scores = {}
-        chunk_info = []
+        chunk_info = {}
         for hit in search_result:
             filename = hit.payload.get('filename')
             semantic_scores[hit.id] = hit.score
-            chunk_info.append(hit.payload)
+            chunk_info[hit.id] = hit.payload
 
         # 2. Keyword Search Score (Chunk-level)
         query_tfidf = self.tfidf_vectorizer.transform([query])
