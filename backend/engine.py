@@ -292,7 +292,7 @@ class VectorMatcher:
         if not query:
             raise ValueError("Empty search query provided.")
 
-        if not self.qdrant_client or not self.tfidf_matrix:
+        if not self.qdrant_client or self.tfidf_matrix is None:
             raise ValueError("Vector store not initialized. Please add documents first.")
 
         # 1. Semantic Search Score (Chunk-level) using Qdrant
