@@ -6,6 +6,8 @@ Handles async PDF processing, vector search, and candidate matching
 import os
 import uuid
 import asyncio
+import logging
+import traceback
 from typing import List, Optional, Dict, Any
 from fastapi import FastAPI, UploadFile, File, HTTPException, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,8 +15,7 @@ from pydantic import BaseModel
 import uvicorn
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
-import httpx
-import json
+import zhipuai
 
 # Load environment variables
 load_dotenv()
@@ -35,9 +36,8 @@ async def get_glm_client():
     """Initialize GLM 5.1 client"""
     global glm_client
     if glm_client is None:
-        glm_client = httpx.AsyncClient(
-            base_url="https://api.z.ai/api/paas/v4",
-            headers={"Authorization": f"Bearer {os.getenv('ZHIPU_API_KEY')}"}
+        glm_client = zhipuai.ZhipuAI(
+            api_key=os.getenv('ZHIPU_API_KEY')
         )
     return glm_client
 
@@ -170,30 +170,24 @@ Please perform a comparative analysis and:
 Focus on finding the best match for the recruitment needs. Be thorough but concise."""
 
         # Call GLM 5.1 for agentic analysis
-        response = await client.post(
-            "/chat/completions",
-            json={
-                "model": "glm-5-1",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are an expert AI recruitment analyst specializing in candidate evaluation and matching."
-                    },
-                    {
-                        "role": "user",
-                        "content": agentic_prompt
-                    }
-                ],
-                "max_tokens": 2000,
-                "temperature": 0.3
-            }
+        response = await client.chat.completions.create(
+            model="glm-4",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert AI recruitment analyst specializing in candidate evaluation and matching."
+                },
+                {
+                    "role": "user",
+                    "content": agentic_prompt
+                }
+            ],
+            max_tokens=2000,
+            temperature=0.3
         )
         
-        if response.status_code != 200:
-            raise HTTPException(status_code=500, detail="GLM API call failed")
-        
-        glm_result = response.json()
-        ai_analysis = glm_result["choices"][0]["message"]["content"]
+        glm_result = response.choices[0].message.content
+        ai_analysis = glm_result
         
         end_time = time.perf_counter()
         latency_ms = (end_time - start_time) * 1000
@@ -233,6 +227,8 @@ Focus on finding the best match for the recruitment needs. Be thorough but conci
         ]
     
     except Exception as e:
+        logging.error(f"Agentic search failed: {str(e)}")
+        logging.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Agentic search failed: {str(e)}")
 
 # Analysis endpoint
