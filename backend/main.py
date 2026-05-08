@@ -267,12 +267,28 @@ async def search_candidates(request: SearchRequest):
             ]
         
         # First get top 10 candidates from vector store
-        vector_results = await matcher.search_async(
-            query=request.query,
-            top_k=10,
-            alpha=request.alpha,
-            filters=request.filters
-        )
+        try:
+            vector_results = await matcher.search_async(
+                query=request.query,
+                top_k=10,
+                alpha=request.alpha,
+                filters=request.filters
+            )
+        except ValueError as ve:
+            # Handle empty store gracefully instead of crashing
+            if "Vector store not initialized" in str(ve):
+                return [
+                    SearchResult(
+                        filename="No candidates found",
+                        score=0.0,
+                        semantic_score=0.0,
+                        keyword_score=0.0,
+                        matched_chunk="",
+                        content_preview="No matching candidates found for your query. Please upload some resumes first using Data Ingestion tab."
+                    )
+                ]
+            else:
+                raise ve
         
         # Handle empty results gracefully
         if not vector_results:

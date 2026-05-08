@@ -221,7 +221,7 @@ class VectorMatcher:
         # Prepare points for Qdrant
         points = []
         for i, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
-            point_id = f"{filename}_{i}"
+            point_id = str(uuid.uuid4())
             points.append(PointStruct(
                 id=point_id,
                 vector=embedding.tolist(),
