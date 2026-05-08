@@ -4,6 +4,7 @@ Handles PDF text extraction, embedding generation, and Qdrant vector indexing.
 """
 
 import os
+import uuid
 import asyncio
 import numpy as np
 from typing import List, Dict, Any, Optional

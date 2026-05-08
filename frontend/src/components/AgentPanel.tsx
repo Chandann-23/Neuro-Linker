@@ -55,6 +55,25 @@ export function AgentPanel({ onFileUpload }: FileUploadProps) {
     }
   }
 
+  const handleClearVectorStore = async () => {
+    try {
+      setUploadStatus('Clearing Vector Store...')
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clear-store`, {
+        method: 'POST'
+      })
+      
+      if (response.ok) {
+        setUploadStatus('Vector Store Cleared Successfully')
+        setTimeout(() => setUploadStatus(null), 3000)
+      } else {
+        throw new Error('Clear failed')
+      }
+    } catch (error) {
+      setUploadStatus('Clear failed')
+      setTimeout(() => setUploadStatus(null), 3000)
+    }
+  }
+
   const handleSendMessage = async () => {
     if (inputValue.trim() && !isLoading && !isProcessing) {
       const userMessage: ChatMessage = {
@@ -122,7 +141,7 @@ export function AgentPanel({ onFileUpload }: FileUploadProps) {
           ? `🎯 **Agentic Analysis Complete**\n\n${searchResults.map((result, index) => 
               `${index + 1}. **${result.filename}** (Match Score: ${Math.round((result.score || 0) * 100)}%)\n   ${result.content_preview}`
             ).join('\n\n')}`
-          : '🔍 **No profiles found in neural store**\n\nNo matching candidates found for your query. Please upload some resumes first using the **Data Ingestion** tab to build your candidate database.'
+          : '🔍 **Database Empty**\n\nNo candidates found in vector store. Please upload resumes using the **Data Ingestion** tab to build your candidate database.'
         
         const aiMessage: ChatMessage = {
           id: (Date.now() + 2).toString(),
