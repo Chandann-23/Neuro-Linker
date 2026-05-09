@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { SearchFilterPanel } from '@/components/SearchFilterPanel'
 import { ResultsGrid } from '@/components/ResultsGrid'
 import { UploadModal } from '@/components/UploadModal'
+import { BackendStatus } from '@/components/BackendStatus'
 import { Upload, FileText, Database } from 'lucide-react'
 import { ApiService, SearchResult } from '@/api'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -76,6 +77,11 @@ export default function RecruiterDashboard() {
             onFilterChange={setFilters}
             isSearching={isSearching}
           />
+        </div>
+        
+        {/* Backend Status */}
+        <div className="absolute top-4 right-4">
+          <BackendStatus />
         </div>
         
         {/* Results Grid */}

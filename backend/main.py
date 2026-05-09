@@ -64,6 +64,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    max_age=600,  # Cache preflight responses for 10 minutes
 )
 
 # Pydantic models
