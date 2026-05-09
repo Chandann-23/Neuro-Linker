@@ -58,12 +58,9 @@ export default function RecruiterDashboard() {
         location: filters.location,
         skills: filters.skills
       })
-      // Force array initialization to prevent crashes
-      const results = Array.isArray(data) ? data : []
-      setCandidates(results)
+      setCandidates(Array.isArray(data) ? data : [])
     } catch (error) {
-      console.error('Search error:', error)
-      // Graceful error recovery with empty array fallback
+      console.error('Search failed:', error)
       setCandidates([])
     } finally {
       setIsSearching(false)
