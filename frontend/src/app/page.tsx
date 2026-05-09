@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SearchFilterPanel } from '@/components/SearchFilterPanel'
 import { ResultsGrid } from '@/components/ResultsGrid'
 import { UploadModal } from '@/components/UploadModal'
