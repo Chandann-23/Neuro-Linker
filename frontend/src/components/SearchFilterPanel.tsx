@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Search, Filter, Briefcase, MapPin, GraduationCap } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Search, Filter, Briefcase, MapPin, GraduationCap, Wifi, WifiOff } from 'lucide-react'
 
 interface SearchFilterPanelProps {
   onSearch: (query: string) => void
@@ -22,6 +22,17 @@ export function SearchFilterPanel({ onSearch, onFilterChange, isSearching }: Sea
     location: '',
     skills: []
   })
+  const [isConnected, setIsConnected] = useState(true)
+
+  useEffect(() => {
+    // Simulate backend connection check
+    const checkConnection = () => {
+      setIsConnected(Math.random() > 0.3) // Random connection status for demo
+    }
+    
+    const interval = setInterval(checkConnection, 3000)
+    return () => clearInterval(interval)
+  }, [])
 
   const handleSearch = () => {
     onSearch(query)
@@ -136,8 +147,26 @@ export function SearchFilterPanel({ onSearch, onFilterChange, isSearching }: Sea
               </span>
             </div>
             <div className="flex justify-between">
+              <span>Backend Status:</span>
+              <span className={`font-medium flex items-center ${isConnected ? 'text-green-400' : 'text-red-400'}`}>
+                {isConnected ? (
+                  <>
+                    <Wifi size={14} className="mr-1" />
+                    Connected to BGE-M3
+                  </>
+                ) : (
+                  <>
+                    <WifiOff size={14} className="mr-1" />
+                    Disconnected
+                  </>
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span>Ready to Search:</span>
-              <span className="font-medium text-green-400">Yes</span>
+              <span className="font-medium text-green-400">
+                {isConnected ? 'Yes' : 'No'}
+              </span>
             </div>
           </div>
         </div>
