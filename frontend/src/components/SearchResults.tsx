@@ -56,7 +56,7 @@ export function SearchResults({ results, onFeedback }: SearchResultsProps) {
       <div className="glass p-8 text-center">
         <Target className="mx-auto mb-4" size={48} style={{ color: 'var(--accent-purple)' }} />
         <h3 className="text-xl font-semibold mb-2">No Results Found</h3>
-        <p className="opacity-70">Try adjusting your search criteria or upload more resumes.</p>
+        <p className="opacity-70">Upload resumes in the Data Ingestion tab to begin neural indexing.</p>
       </div>
     )
   }

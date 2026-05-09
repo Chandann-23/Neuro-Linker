@@ -5,50 +5,8 @@ import { CandidateCard } from '@/components/CandidateCard'
 import { Download, Filter, Search } from 'lucide-react'
 
 export default function Canvas() {
-  const [candidates, setCandidates] = useState([
-    {
-      id: '1',
-      name: 'Sarah Chen',
-      currentRole: 'Senior Machine Learning Engineer',
-      location: 'San Francisco, CA',
-      experience: '5 years',
-      matchScore: 94,
-      keySignals: [
-        'Expert in PyTorch and TensorFlow',
-        'Published researcher in NLP',
-        'Led ML team at scale'
-      ],
-      lastActive: '2 days ago'
-    },
-    {
-      id: '2',
-      name: 'Michael Rodriguez',
-      currentRole: 'Full-Stack Developer',
-      location: 'Austin, TX',
-      experience: '7 years',
-      matchScore: 88,
-      keySignals: [
-        'React and Next.js specialist',
-        'Cloud architecture experience',
-        'Team lead for 3 years'
-      ],
-      lastActive: '1 week ago'
-    },
-    {
-      id: '3',
-      name: 'Emily Watson',
-      currentRole: 'Data Scientist',
-      location: 'Boston, MA',
-      experience: '4 years',
-      matchScore: 82,
-      keySignals: [
-        'Advanced statistical modeling',
-        'Healthcare analytics background',
-        'Python and R expert'
-      ],
-      lastActive: '3 days ago'
-    }
-  ])
+  const [candidates, setCandidates] = useState([])
+  const [isSearching, setIsSearching] = useState(false)
 
   return (
     <div className="flex flex-col h-full bg-warm-white">
@@ -57,26 +15,68 @@ export default function Canvas() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-gray-800">
-              {candidates.length} Profiles Found
+              {isSearching ? (
+                <>
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-teal-200"></div>
+                    <span className="ml-2">Neural Processing...</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {candidates.length} Profiles Found
+                </>
+              )}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              Showing top candidates based on your search criteria
+              {isSearching ? (
+                <>
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-teal-200"></div>
+                    <span className="ml-2">Neural Processing...</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  Showing top candidates based on your search criteria
+                </>
+              )}
             </p>
           </div>
-          
           <div className="flex items-center space-x-3">
-            <button className="px-4 py-2 border border-teal-200 text-brand-teal rounded-lg hover:bg-soft-teal transition-colors flex items-center space-x-2">
-              <Filter size={16} />
-              <span>Filter</span>
+            <input 
+              type="text" 
+              value={query} 
+              onChange={(e) => setQuery(e.target.value)} 
+              className="px-4 py-2 border border-teal-200 text-brand-teal rounded-lg hover:bg-soft-teal transition-colors flex items-center space-x-2"
+            />
+            <button 
+              className="px-4 py-2 border border-teal-200 text-brand-teal rounded-lg hover:bg-soft-teal transition-colors flex items-center space-x-2"
+              onClick={() => {
+                setIsSearching(true);
+                searchCandidates(query).then(results => {
+                  setCandidates(results);
+                  setIsSearching(false);
+                }).catch(error => {
+                  console.error('Search error:', error);
+                  setIsSearching(false);
+                });
+              }}
+              disabled={isSearching}
+            >
+              <Search size={16} />
+              <span>Search</span>
             </button>
-            <button className="px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center space-x-2">
+            <button 
+              className="px-4 py-2 bg-brand-teal text-white rounded-lg hover:bg-teal-700 transition-colors flex items-center space-x-2"
+              disabled={isSearching}
+            >
               <Download size={16} />
               <span>Export</span>
             </button>
           </div>
         </div>
       </div>
-
       {/* Candidate Cards */}
       <div className="flex-1 overflow-auto p-6">
         <div className="space-y-6">

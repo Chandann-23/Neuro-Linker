@@ -315,7 +315,7 @@ class VectorMatcher:
             raise ValueError("Vector store not initialized. Please add documents first.")
 
         # 1. Semantic Search Score (Chunk-level) using Qdrant
-        query_embedding = self.model.encode([query])[0].tolist()
+        query_vector = self.model.encode([query])[0].tolist()
         
         # Build Qdrant filter if provided
         qdrant_filter = None
