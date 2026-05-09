@@ -4,9 +4,51 @@ import { useState } from 'react'
 import { CandidateCard } from '@/components/CandidateCard'
 import { Download, Filter, Search } from 'lucide-react'
 
+export const dynamic = 'force-dynamic'
+
+interface Candidate {
+  id: string
+  name: string
+  currentRole: string
+  location: string
+  experience: string
+  matchScore: number
+  keySignals: string[]
+  lastActive: string
+}
+
 export default function Canvas() {
-  const [candidates, setCandidates] = useState([])
+  const [candidates, setCandidates] = useState<Candidate[]>([])
   const [isSearching, setIsSearching] = useState(false)
+  const [query, setQuery] = useState('')
+
+  const searchCandidates = async (searchQuery: string) => {
+    if (!searchQuery.trim()) return []
+    
+    try {
+      const response = await fetch('/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: searchQuery,
+          alpha: 0.7,
+          filters: {}
+        }),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Search failed')
+      }
+      
+      const results = await response.json()
+      return results
+    } catch (error) {
+      console.error('Search error:', error)
+      return []
+    }
+  }
 
   return (
     <div className="flex flex-col h-full bg-warm-white">
