@@ -327,7 +327,7 @@ class VectorMatcher:
                 qdrant_filter = Filter(must=conditions)
         
         # Search Qdrant using query_points method
-        search_result = await self.qdrant_client.query_points(
+        search_result = self.qdrant_client.query_points(
             collection_name=self.collection_name,
             query=query_vector,
             query_filter=qdrant_filter,
