@@ -25,7 +25,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Load environment variables
 load_dotenv()
 
-from engine import VectorMatcher, LLMAnalyzer
+from engine import VectorMatcher
 from worker import process_pdf_task
 from models import TaskStatus, SearchResult, UploadResponse
 from observability import observability, db_logger
@@ -34,19 +34,6 @@ from observability import observability, db_logger
 matcher: Optional[VectorMatcher] = None
 task_store: Dict[str, TaskStatus] = {}
 
-# Hugging Face Inference Client
-hf_client = None
-
-async def get_hf_client():
-    """Initialize Hugging Face Inference client"""
-    global hf_client
-    if hf_client is None:
-        from openai import AsyncOpenAI
-        hf_client = AsyncOpenAI(
-            base_url='https://router.huggingface.co/v1',
-            api_key=os.getenv('HF_TOKEN')
-        )
-    return hf_client
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -298,118 +285,7 @@ async def search_candidates(request: SearchRequest):
                 )
             ]
         
-        # Get Hugging Face client
-        client = await get_hf_client()
-        
-        # Prepare candidate context for GLM analysis
-        candidate_context = "\n\n".join([
-            f"Candidate {i+1}: {result['filename']}\nContent: {result['content'][:1000]}...\nScore: {result['score']}"
-            for i, result in enumerate(vector_results[:10])
-        ])
-        
-        # Agentic prompt for GLM 5.1
-        agentic_prompt = f"""You are an expert AI recruitment analyst. Analyze these 10 candidates for the query: "{request.query}"
-
-CANDIDATES:
-{candidate_context}
-
-Please perform a comparative analysis and:
-1. Rank the top 5 candidates by relevance
-2. Explain why each candidate is a good fit
-3. Highlight key skills and experience
-4. Provide reasoning for your rankings
-
-Focus on finding the best match for the recruitment needs. Be thorough but concise."""
-
-        # Call Qwen2.5-7B-Instruct via Hugging Face Inference API
-        try:
-            hf_client = await get_hf_client()
-            model_name = "Qwen/Qwen2.5-7B-Instruct"
-            print(f"Attempting Hugging Face call with model: {model_name}")
-            
-            # Agentic prompt for Qwen2.5-7B-Instruct
-            qwen_prompt = f"""You are an expert AI recruitment analyst. Analyze these candidates for the query: "{request.query}"
-
-CANDIDATES:
-{candidate_context}
-
-Please perform a comparative analysis and:
-1. Rank the top 3 candidates by relevance
-2. Explain why each candidate is a good fit
-3. Generate "Key Fit Signals" - specific bullet points highlighting their relevant experience
-4. For candidates like Bhavana (Amazon Bengaluru), Joel (Presidency University), and Shiva (IT-AE Excellence Award), highlight these specific achievements
-
-Focus on finding the best match for the recruitment needs. Be thorough but concise.
-
-Please respond in JSON format:
-{{
-  "ranked_candidates": [
-    {{
-      "name": "candidate_name",
-      "match_percentage": 95,
-      "fit_analysis": "Detailed analysis of why they are a good match",
-      "key_fit_signals": ["Specific achievement 1", "Specific achievement 2", "Relevant skill 1"]
-    }}
-  ]
-}}"""
-            
-            # Standardized messages format
-            messages = [
-                {"role": "system", "content": "You are an expert AI recruitment analyst specializing in candidate evaluation and matching."},
-                {"role": "user", "content": qwen_prompt}
-            ]
-            
-            response = hf_client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                max_tokens=2000,
-                temperature=0.3
-            )
-            
-        except Exception as hf_error:
-            logging.error(f"Hugging Face API call failed: {str(hf_error)}")
-            logging.error(f"Full HF error traceback: {traceback.format_exc()}")
-            
-            # Try to get response body for debugging
-            if hasattr(hf_error, 'response') and hf_error.response is not None:
-                try:
-                    response_body = hf_error.response.text
-                    logging.error(f"Hugging Face API response body: {response_body}")
-                except:
-                    pass
-            
-            raise HTTPException(
-                status_code=500, 
-                detail=f"Hugging Face API Error: {str(hf_error)}. Check logs for full traceback."
-            )
-        
-        hf_result = response.choices[0].message.content
-        
-        end_time = time.perf_counter()
-        latency_ms = (end_time - start_time) * 1000
-        
-        # Trace search with LangSmith
-        await observability.trace_search(
-            query=request.query,
-            results=vector_results,
-            semantic_weight=request.alpha,
-            keyword_weight=1 - request.alpha,
-            latency_ms=latency_ms,
-            filters=request.filters,
-            ai_analysis=hf_result
-        )
-        
-        # Log metrics to database
-        await db_logger.log_search_metrics({
-            "query": request.query,
-            "results_count": len(vector_results),
-            "top_confidence": vector_results[0]["score"] if vector_results else 0.0,
-            "latency_ms": latency_ms,
-            "filters": request.filters,
-            "ai_analysis": hf_result
-        })
-        
-        # Return top 5 vector results with enhanced content
+        # Return raw Qdrant data
         return [
             SearchResult(
                 filename=result["filename"],
@@ -417,36 +293,15 @@ Please respond in JSON format:
                 semantic_score=result["semantic_score"],
                 keyword_score=result["keyword_score"],
                 matched_chunk=result["matched_chunk"],
-                content_preview=f"{ai_analysis}\n\n**{result['filename']}**\n{result['content'][:300]}..."
+                content_preview=result["content"][:300] + "..."
             )
             for result in vector_results[:5]
         ]
-    
+        
     except Exception as e:
         logging.error(f"Agentic search failed: {str(e)}")
         logging.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Agentic search failed: {str(e)}")
-
-# Analysis endpoint
-@app.post("/analyze")
-async def analyze_candidate_fit(filename: str, job_description: str):
-    """Analyze candidate fit using LLM"""
-    if not matcher:
-        raise HTTPException(status_code=503, detail="Vector store not initialized")
-    
-    try:
-        # Get candidate content
-        candidate_content = await matcher.get_document_content(filename)
-        if not candidate_content:
-            raise HTTPException(status_code=404, detail="Candidate not found")
-        
-        # Perform analysis
-        analysis = LLMAnalyzer.analyze_fit(candidate_content, job_description)
-        
-        return {"analysis": analysis, "filename": filename}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 # Feedback endpoint
 @app.post("/feedback")

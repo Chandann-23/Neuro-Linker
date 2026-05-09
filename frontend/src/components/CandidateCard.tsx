@@ -12,6 +12,11 @@ interface CandidateCardProps {
     matchScore: number
     keySignals: string[]
     lastActive: string
+    filename: string
+    content: string
+    education: string
+    skills: string[]
+    projects: string[]
   }
 }
 
@@ -28,28 +33,29 @@ export function CandidateCard({ candidate }: CandidateCardProps) {
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-[#004D40] mb-1">{candidate.name}</h3>
-          <p className="text-gray-600 mb-2">{candidate.currentRole}</p>
-          <div className="flex items-center space-x-4 text-sm text-gray-500">
-            <div className="flex items-center space-x-1">
-              <MapPin size={14} />
-              <span>{candidate.location}</span>
+          <div>
+            <h3 className="text-lg font-semibold mb-1">{candidate.name}</h3>
+            <p className="text-sm text-gray-500 mb-2">{candidate.currentRole}</p>
+            <p className="text-sm text-gray-500 mb-1">{candidate.education}</p>
+          </div>
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center space-x-4">
+            <div>
+              <MapPin size={14} className="mr-1" />
+              <span className="text-sm text-gray-500">{candidate.location}</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Briefcase size={14} />
-              <span>{candidate.experience}</span>
-            </div>
-            <div className="flex items-center space-x-1">
-              <Calendar size={14} />
-              <span>{candidate.lastActive}</span>
+            <div>
+              <Calendar size={14} className="mr-1" />
+              <span className="text-sm text-gray-500">{candidate.experience}</span>
             </div>
           </div>
         </div>
         
         {/* Match Score Badge */}
         <div className="flex flex-col items-end">
-          <div className={`px-3 py-1 rounded-full text-white text-sm font-bold bg-match border border-[2px]`}>
-            {candidate.matchScore}% Match
+          <div className={`px-3 py-1 rounded-full text-white text-sm font-bold bg-match border-[2px]`}>
+            {Math.round(candidate.matchScore * 100)}% Match
           </div>
         </div>
       </div>
@@ -60,12 +66,32 @@ export function CandidateCard({ candidate }: CandidateCardProps) {
         <div className="space-y-2">
           {candidate.keySignals.map((signal, index) => (
             <div key={index} className="flex items-center space-x-3 p-2 bg-signal rounded-lg">
-              <div className="w-5 h-5 rounded-full bg-brand-teal flex items-center justify-center">
-                <Check size={12} className="text-white" />
-              </div>
-              <span className="text-sm text-signal">{signal}</span>
+              <Brain size={14} className="mr-1" />
+              <span className="text-sm text-gray-500">{signal}</span>
             </div>
           ))}
+        </div>
+        
+        {/* Dynamic Tags */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {candidate.skills && (
+            <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+              <Briefcase size={12} className="mr-1" />
+              <span className="font-medium">Top Skills</span>
+            </div>
+          )}
+          {candidate.education && (
+            <div className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
+              <Brain size={14} className="mr-1" />
+              <span className="font-medium">{candidate.education}</span>
+            </div>
+          )}
+          {candidate.projects && (
+            <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+              <Brain size={14} className="mr-1" />
+              <span className="font-medium">Key Projects</span>
+            </div>
+          )}
         </div>
       </div>
 
