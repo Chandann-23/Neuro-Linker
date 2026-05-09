@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { SearchFilterPanel } from '@/components/SearchFilterPanel'
-import { ResultsGrid } from '@/components/ResultsGrid'
+import { SearchResults as ResultsGrid } from '@/components/SearchResults'
 import { UploadModal } from '@/components/UploadModal'
 import { BackendStatus } from '@/components/BackendStatus'
 import { Upload, FileText, Database } from 'lucide-react'
@@ -17,7 +17,7 @@ interface FilterState {
   skills: string[]
 }
 
-export default function RecruiterDashboard() {
+export default function RecruiterDashboard(){
   const [candidates, setCandidates] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
@@ -98,10 +98,9 @@ export default function RecruiterDashboard() {
         {/* Results Grid */}
         <div className="flex-1 h-full overflow-hidden">
           <ResultsGrid 
-            candidates={candidates}
-            isSearching={isSearching}
+            data={candidates} // MUST BE 'data' to match our fixed component!
+            onFeedback={(file, status, score) => console.log(file, status, score)} 
           />
-        </div>
         
         {/* Upload Modal */}
         <UploadModal
