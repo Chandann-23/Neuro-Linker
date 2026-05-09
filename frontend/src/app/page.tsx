@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { SearchFilterPanel } from '@/components/SearchFilterPanel'
 import { ResultsGrid } from '@/components/ResultsGrid'
+import { UploadModal } from '@/components/UploadModal'
+import { Upload, FileText, Database } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +22,13 @@ export default function RecruiterDashboard() {
     location: '',
     skills: []
   })
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
+
+  const handleUpload = (files: File[]) => {
+    // Handle file upload logic here
+    console.log('Uploading files:', files)
+    setUploadModalOpen(false)
+  }
 
   const handleSearch = async (query: string) => {
     if (!query.trim()) return
@@ -61,6 +70,17 @@ export default function RecruiterDashboard() {
     <div className="flex h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Search & Filter Panel */}
       <div className="w-96 h-full">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-white">Neural Search</h1>
+          <button
+            onClick={() => setUploadModalOpen(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <Upload size={16} />
+            <span>Upload Resumes</span>
+          </button>
+        </div>
+        
         <SearchFilterPanel 
           onSearch={handleSearch}
           onFilterChange={setFilters}
@@ -75,6 +95,13 @@ export default function RecruiterDashboard() {
           isSearching={isSearching}
         />
       </div>
+      
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onUpload={handleUpload}
+      />
     </div>
   )
 }
