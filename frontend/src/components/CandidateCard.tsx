@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, MapPin, Calendar, Briefcase } from 'lucide-react'
+import { Check, MapPin, Calendar, Briefcase, Download, Mail, Award, Code, GraduationCap } from 'lucide-react'
 
 interface CandidateCardProps {
   candidate: {
@@ -66,42 +66,44 @@ export function CandidateCard({ candidate }: CandidateCardProps) {
         <div className="space-y-2">
           {candidate.keySignals.map((signal, index) => (
             <div key={index} className="flex items-center space-x-3 p-2 bg-signal rounded-lg">
-              <Brain size={14} className="mr-1" />
+              <Award size={14} className="mr-1" />
               <span className="text-sm text-gray-500">{signal}</span>
             </div>
           ))}
         </div>
         
-        {/* Dynamic Tags */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {candidate.skills && (
-            <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-              <Briefcase size={12} className="mr-1" />
-              <span className="font-medium">Top Skills</span>
-            </div>
-          )}
+        {/* Smart Tags Grid */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
           {candidate.education && (
-            <div className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm">
-              <Brain size={14} className="mr-1" />
+            <div className="px-3 py-2 bg-purple-100 text-purple-800 rounded-lg text-sm text-center">
+              <GraduationCap size={14} className="mr-1 inline" />
               <span className="font-medium">{candidate.education}</span>
             </div>
           )}
-          {candidate.projects && (
-            <div className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-              <Brain size={14} className="mr-1" />
-              <span className="font-medium">Key Projects</span>
+          {candidate.projects && candidate.projects.length > 0 && (
+            <div className="px-3 py-2 bg-green-100 text-green-800 rounded-lg text-sm text-center">
+              <Code size={14} className="mr-1 inline" />
+              <span className="font-medium">{candidate.projects[0]}</span>
+            </div>
+          )}
+          {candidate.skills && candidate.skills.length > 0 && (
+            <div className="px-3 py-2 bg-blue-100 text-blue-800 rounded-lg text-sm text-center">
+              <Briefcase size={14} className="mr-1 inline" />
+              <span className="font-medium">{candidate.skills[0]}</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Action Buttons */}
+      {/* Quick Actions */}
       <div className="flex space-x-3 pt-4 border-t border-teal-50">
-        <button className="flex-1 px-4 py-2 bg-action text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
-          View Profile
+        <button className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center justify-center">
+          <Download size={14} className="mr-2" />
+          Download PDF
         </button>
-        <button className="flex-1 px-4 py-2 bg-action text-white rounded-lg hover:bg-teal-700 transition-colors text-sm font-medium">
-          Message
+        <button className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center">
+          <Mail size={14} className="mr-2" />
+          Email Candidate
         </button>
       </div>
     </div>
