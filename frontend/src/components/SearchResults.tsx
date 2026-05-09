@@ -18,6 +18,8 @@ interface SearchResultsProps {
 }
 
 export function SearchResults({ results, onFeedback }: SearchResultsProps) {
+  // The State Guard: Initialize results as an empty array
+  const [results, setResults] = useState<SearchResult[]>([])
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set())
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<Set<string>>(new Set())
 
@@ -51,9 +53,9 @@ export function SearchResults({ results, onFeedback }: SearchResultsProps) {
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(filename)}`
   }
 
-  // Defensive programming: Strict array guard to prevent map crashes
-const safeResults = Array.isArray(results) ? results : [];
-if (safeResults.length === 0) {
+  // The Render Guard: Use safeCandidates for mapping
+  const safeCandidates = Array.isArray(results) ? results : [];
+if (safeCandidates.length === 0) {
     return (
       <div className="glass p-8 text-center">
         <Target className="mx-auto mb-4" size={48} style={{ color: 'var(--accent-purple)' }} />
@@ -65,29 +67,29 @@ if (safeResults.length === 0) {
 
   return (
     <div className="space-y-6">
-      {safeResults?.map((result: any, index: number) => (
-        <div key={result.filename} className="result-card fade-in">
+      {safeCandidates.length > 0 ? safeCandidates.map((candidate: any, index: number) => (
+        <div key={candidate.filename} className="result-card fade-in">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-4">
               <Image
-                src={getAvatarUrl(result.filename)}
-                alt={result.filename}
+                src={getAvatarUrl(candidate.filename)}
+                alt={candidate.filename}
                 width={50}
                 height={50}
                 className="rounded-full border-2"
                 style={{ borderColor: 'var(--accent-pink)' }}
               />
               <div>
-                <h3 className="text-lg font-semibold mb-1">{result.filename}</h3>
+                <h3 className="text-lg font-semibold mb-1">{candidate.filename}</h3>
                 <div className="flex items-center space-x-4">
                   <span
                     className="font-bold text-lg"
-                    style={{ color: getScoreColor(result.score) }}
+                    style={{ color: getScoreColor(candidate.score) }}
                   >
-                    {(result.score * 100).toFixed(1)}% Match
+                    {(candidate.score * 100).toFixed(1)}% Match
                   </span>
                   <span className="text-sm opacity-70">
-                    {getMatchType(result.semantic_score, result.keyword_score) === 'semantic' ? (
+                    {getMatchType(candidate.semantic_score, candidate.keyword_score) === 'semantic' ? (
                       <span className="flex items-center">
                         <Brain size={14} className="mr-1" />
                         Semantic
@@ -104,17 +106,17 @@ if (safeResults.length === 0) {
             </div>
             
             <div className="flex items-center space-x-2">
-              {!feedbackSubmitted.has(result.filename) && (
+              {!feedbackSubmitted.has(candidate.filename) && (
                 <div className="flex space-x-1">
                   <button
-                    onClick={() => handleFeedback(result.filename, true, result.score)}
+                    onClick={() => handleFeedback(candidate.filename, true, candidate.score)}
                     className="p-2 rounded-lg hover:bg-green-800 transition-colors"
                     title="Good match"
                   >
                     <ThumbsUp size={16} style={{ color: '#22c55e' }} />
                   </button>
                   <button
-                    onClick={() => handleFeedback(result.filename, false, result.score)}
+                    onClick={() => handleFeedback(candidate.filename, false, candidate.score)}
                     className="p-2 rounded-lg hover:bg-red-800 transition-colors"
                     title="Poor match"
                   >
@@ -138,12 +140,12 @@ if (safeResults.length === 0) {
                     <div
                       className="h-2 rounded-full"
                       style={{
-                        width: `${result.semantic_score * 100}%`,
+                        width: `${candidate.semantic_score * 100}%`,
                         backgroundColor: 'var(--accent-purple)'
                       }}
                     />
                   </div>
-                  <span>{(result.semantic_score * 100).toFixed(1)}%</span>
+                  <span>{(candidate.semantic_score * 100).toFixed(1)}%</span>
                 </div>
               </div>
               <div>
@@ -153,12 +155,12 @@ if (safeResults.length === 0) {
                     <div
                       className="h-2 rounded-full"
                       style={{
-                        width: `${result.keyword_score * 100}%`,
+                        width: `${candidate.keyword_score * 100}%`,
                         backgroundColor: 'var(--accent-pink)'
                       }}
                     />
                   </div>
-                  <span>{(result.keyword_score * 100).toFixed(1)}%</span>
+                  <span>{(candidate.keyword_score * 100).toFixed(1)}%</span>
                 </div>
               </div>
             </div>
