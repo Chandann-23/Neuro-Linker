@@ -101,6 +101,7 @@ export default function RecruiterDashboard(){
             data={candidates} // MUST BE 'data' to match our fixed component!
             onFeedback={(file, status, score) => console.log(file, status, score)} 
           />
+        </div>
         
         {/* Upload Modal */}
         <UploadModal
