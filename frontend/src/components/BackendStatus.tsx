@@ -7,36 +7,44 @@ export function BackendStatus() {
   const [isConnected, setIsConnected] = useState(true)
   const [lastPing, setLastPing] = useState(Date.now())
   const [consecutiveFailures, setConsecutiveFailures] = useState(0)
+  const [isMounted, setIsMounted] = useState(false)
 
+  // Hydration guard - only run on client side
   useEffect(() => {
-    const checkBackendHealth = async () => {
-      try {
-        const response = await fetch('https://chandann-23-neuro-linker-api.hf.space/health')
-        
-        if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
-          throw new Error('Backend returned non-JSON or error')
-        }
-        
-        const data = await response.json()
-        
-        if (data.status === 'healthy') {
-          setIsConnected(true)
-          setConsecutiveFailures(0)
-          setLastPing(Date.now())
-        } else {
-          setConsecutiveFailures(prev => prev + 1)
-          if (consecutiveFailures >= 2) {
-            setIsConnected(false)
-          }
-        }
-      } catch (error) {
-        console.error('Health check failed:', error)
+    setIsMounted(true)
+  }, [])
+
+  const checkBackendHealth = async () => {
+    try {
+      const response = await fetch('https://chandann-23-neuro-linker-api.hf.space/health')
+      
+      if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
+        throw new Error('Backend returned non-JSON or error')
+      }
+      
+      const data = await response.json()
+      
+      if (data.status === 'healthy') {
+        setIsConnected(true)
+        setConsecutiveFailures(0)
+        setLastPing(Date.now())
+      } else {
         setConsecutiveFailures(prev => prev + 1)
         if (consecutiveFailures >= 2) {
           setIsConnected(false)
         }
       }
+    } catch (error) {
+      console.error('Health check failed:', error)
+      setConsecutiveFailures(prev => prev + 1)
+      if (consecutiveFailures >= 2) {
+        setIsConnected(false)
+      }
     }
+  }
+
+  useEffect(() => {
+    if (!isMounted) return // Only run after component is mounted
 
     // Initial ping
     checkBackendHealth()
@@ -87,7 +95,7 @@ export function BackendStatus() {
   }
 
   return (
-    <div className="flex items-center space-x-2 p-2 bg-white/5 rounded-lg">
+    <div className="flex items-center space-x-2 p-2 bg-white/5 rounded-lg" suppressHydrationWarning={true}>
       <div className="flex items-center space-x-2">
         {isConnected ? (
           <Wifi size={16} className={getStatusColor()} />
