@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, Star, Target, Brain } from 'lucide-react'
 import Image from 'next/image'
 
@@ -13,15 +13,21 @@ interface SearchResult {
 }
 
 interface SearchResultsProps {
-  results: SearchResult[]
+  results: SearchResult[] // This is the data coming from your API
   onFeedback: (filename: string, feedback: boolean, score: number) => void
 }
 
 export function SearchResults({ results, onFeedback }: SearchResultsProps) {
-  // The State Guard: Initialize results as an empty array
-  const [results, setResults] = useState<SearchResult[]>([])
+  // REMOVED: const [results, setResults] = useState([]) <- THIS WAS THE BUG
+  
   const [expandedResults, setExpandedResults] = useState<Set<string>>(new Set())
   const [feedbackSubmitted, setFeedbackSubmitted] = useState<Set<string>>(new Set())
+  const [hasMounted, setHasMounted] = useState(false)
+
+  // Hydration Guard
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
   const toggleExpanded = (filename: string) => {
     const newExpanded = new Set(expandedResults)
@@ -39,48 +45,49 @@ export function SearchResults({ results, onFeedback }: SearchResultsProps) {
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 0.8) return '#22c55e' // green
-    if (score >= 0.6) return '#f59e0b' // yellow
-    return '#ef4444' // red
-  }
-
-  const getMatchType = (semanticScore: number, keywordScore: number) => {
-    return semanticScore > keywordScore ? 'semantic' : 'keyword'
+    if (score >= 0.8) return '#22c55e' 
+    if (score >= 0.6) return '#f59e0b' 
+    return '#ef4444' 
   }
 
   const getAvatarUrl = (filename: string) => {
-    // Generate deterministic avatar based on filename
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(filename)}`
   }
 
-  // The Render Guard: Use safeCandidates for mapping
+  // THE BULLETPROOF GUARD
+  if (!hasMounted) return null;
+
   const safeCandidates = Array.isArray(results) ? results : [];
-if (safeCandidates.length === 0) {
+
+  if (safeCandidates.length === 0) {
     return (
-      <div className="glass p-8 text-center">
+      <div className="glass p-8 text-center fade-in">
         <Target className="mx-auto mb-4" size={48} style={{ color: 'var(--accent-purple)' }} />
-        <h3 className="text-xl font-semibold mb-2">No Results Found</h3>
-        <p className="opacity-70">Upload resumes in the Data Ingestion tab to begin neural indexing.</p>
+        <h3 className="text-xl font-semibold mb-2">No Candidates Found</h3>
+        <p className="opacity-70">Try adjusting your filters or upload more resumes.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {safeCandidates.length > 0 ? safeCandidates.map((candidate: any, index: number) => (
-        <div key={candidate.filename} className="result-card fade-in">
+    <div className="space-y-6 fade-in">
+      {safeCandidates.map((candidate, index) => (
+        <div key={`${candidate.filename}-${index}`} className="result-card">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-4">
-              <Image
-                src={getAvatarUrl(candidate.filename)}
-                alt={candidate.filename}
-                width={50}
-                height={50}
-                className="rounded-full border-2"
-                style={{ borderColor: 'var(--accent-pink)' }}
-              />
+              <div className="relative w-12 h-12">
+                <Image
+                  src={getAvatarUrl(candidate.filename)}
+                  alt={candidate.filename}
+                  fill
+                  className="rounded-full border-2"
+                  style={{ borderColor: 'var(--accent-pink)' }}
+                />
+              </div>
               <div>
-                <h3 className="text-lg font-semibold mb-1">{candidate.filename}</h3>
+                <h3 className="text-lg font-semibold mb-1 truncate max-w-[200px]">
+                  {candidate.filename.replace('.pdf', '')}
+                </h3>
                 <div className="flex items-center space-x-4">
                   <span
                     className="font-bold text-lg"
@@ -88,17 +95,11 @@ if (safeCandidates.length === 0) {
                   >
                     {(candidate.score * 100).toFixed(1)}% Match
                   </span>
-                  <span className="text-sm opacity-70">
-                    {getMatchType(candidate.semantic_score, candidate.keyword_score) === 'semantic' ? (
-                      <span className="flex items-center">
-                        <Brain size={14} className="mr-1" />
-                        Semantic
-                      </span>
+                  <span className="text-sm opacity-70 flex items-center">
+                    {candidate.semantic_score > candidate.keyword_score ? (
+                      <><Brain size={14} className="mr-1" /> Semantic</>
                     ) : (
-                      <span className="flex items-center">
-                        <Target size={14} className="mr-1" />
-                        Keyword
-                      </span>
+                      <><Target size={14} className="mr-1" /> Keyword</>
                     )}
                   </span>
                 </div>
@@ -106,94 +107,71 @@ if (safeCandidates.length === 0) {
             </div>
             
             <div className="flex items-center space-x-2">
-              {!feedbackSubmitted.has(candidate.filename) && (
+              {!feedbackSubmitted.has(candidate.filename) ? (
                 <div className="flex space-x-1">
                   <button
                     onClick={() => handleFeedback(candidate.filename, true, candidate.score)}
-                    className="p-2 rounded-lg hover:bg-green-800 transition-colors"
-                    title="Good match"
+                    className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                   >
                     <ThumbsUp size={16} style={{ color: '#22c55e' }} />
                   </button>
                   <button
                     onClick={() => handleFeedback(candidate.filename, false, candidate.score)}
-                    className="p-2 rounded-lg hover:bg-red-800 transition-colors"
-                    title="Poor match"
+                    className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                   >
                     <ThumbsDown size={16} style={{ color: '#ef4444' }} />
                   </button>
                 </div>
-              )}
-              {feedbackSubmitted.has(result.filename) && (
-                <span className="text-sm opacity-70">Feedback submitted</span>
+              ) : (
+                <span className="text-xs opacity-50 bg-white/5 px-2 py-1 rounded">Feedback Received</span>
               )}
             </div>
           </div>
 
-          {/* Score Breakdown */}
-          <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: 'var(--accent-navy)' }}>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+          {/* Progress Bars */}
+          <div className="mb-4 p-3 rounded-lg bg-black/20 border border-white/5">
+            <div className="grid grid-cols-2 gap-4 text-xs">
               <div>
-                <span className="opacity-70">Semantic:</span>
-                <div className="flex items-center mt-1">
-                  <div className="flex-1 bg-gray-700 rounded-full h-2 mr-2">
-                    <div
-                      className="h-2 rounded-full"
-                      style={{
-                        width: `${candidate.semantic_score * 100}%`,
-                        backgroundColor: 'var(--accent-purple)'
-                      }}
-                    />
-                  </div>
-                  <span>{(candidate.semantic_score * 100).toFixed(1)}%</span>
+                <div className="flex justify-between mb-1">
+                  <span className="opacity-70">Semantic Score</span>
+                  <span>{(candidate.semantic_score * 100).toFixed(0)}%</span>
+                </div>
+                <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full transition-all duration-500" 
+                    style={{ width: `${candidate.semantic_score * 100}%`, backgroundColor: 'var(--accent-purple)' }}
+                  />
                 </div>
               </div>
               <div>
-                <span className="opacity-70">Keyword:</span>
-                <div className="flex items-center mt-1">
-                  <div className="flex-1 bg-gray-700 rounded-full h-2 mr-2">
-                    <div
-                      className="h-2 rounded-full"
-                      style={{
-                        width: `${candidate.keyword_score * 100}%`,
-                        backgroundColor: 'var(--accent-pink)'
-                      }}
-                    />
-                  </div>
-                  <span>{(candidate.keyword_score * 100).toFixed(1)}%</span>
+                <div className="flex justify-between mb-1">
+                  <span className="opacity-70">Keyword Match</span>
+                  <span>{(candidate.keyword_score * 100).toFixed(0)}%</span>
+                </div>
+                <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full transition-all duration-500" 
+                    style={{ width: `${candidate.keyword_score * 100}%`, backgroundColor: 'var(--accent-pink)' }}
+                  />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Matched Chunk */}
+          {/* Evidence Chunk */}
           <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium">Match Evidence:</span>
-              <button
-                onClick={() => toggleExpanded(result.filename)}
-                className="p-1 rounded hover:bg-purple-800 transition-colors"
-              >
-                {expandedResults.has(result.filename) ? (
-                  <ChevronUp size={16} />
-                ) : (
-                  <ChevronDown size={16} />
-                )}
-              </button>
+            <button
+              onClick={() => toggleExpanded(candidate.filename)}
+              className="flex items-center justify-between w-full text-sm font-medium mb-2 hover:opacity-80"
+            >
+              <span>Semantic Evidence</span>
+              {expandedResults.has(candidate.filename) ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            <div 
+              className={`p-3 rounded-lg text-sm bg-black/30 border border-white/5 transition-all ${expandedResults.has(candidate.filename) ? '' : 'line-clamp-2'}`}
+            >
+              {candidate.matched_chunk}
             </div>
-            <div className={`p-3 rounded-lg text-sm ${expandedResults.has(result.filename) ? '' : 'line-clamp-3'}`}
-                 style={{ backgroundColor: 'var(--accent-navy)' }}>
-              {result.matched_chunk}
-            </div>
-          </div>
-
-          {/* Skills */}
-          <div className="flex flex-wrap gap-2">
-            {['Python', 'AI', 'Machine Learning', 'React', 'TypeScript', 'Cloud'].slice(0, 4).map((skill, skillIndex) => (
-              <span key={skillIndex} className="skill-chip">
-                {skill}
-              </span>
-            ))}
           </div>
         </div>
       ))}
