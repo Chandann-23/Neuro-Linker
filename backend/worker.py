@@ -87,39 +87,38 @@ async def process_pdf_task(
     task_store: Dict[str, Any],
     matcher: Any
 ):
-    """Background task to process uploaded PDFs"""
+    """Background task to process uploaded PDFs - MEMORY-FIRST VERSION"""
+    processed_files = []
+    failed_files = []
+    
     try:
-        # Create data directory if it doesn't exist
-        os.makedirs("data", exist_ok=True)
-        
-        processed_files = []
-        failed_files = []
-        
         for i, file in enumerate(files):
             try:
                 # Update progress
                 task_store[task_id].processed_files = i
                 task_store[task_id].message = f"Processing {file.filename}..."
                 
-                # Save uploaded file
-                file_path = f"data/{task_id}_{file.filename}"
-                with open(file_path, "wb") as f:
-                    content = await file.read()
-                    f.write(content)
+                # 1. READ DIRECTLY FROM MEMORY
+                content = await file.read()
                 
-                # Extract text
-                text = await PDFProcessor.extract_text_async(file_path)
-                if not text:
+                # 2. Open PDF from stream
+                text = ""
+                with fitz.open(stream=content, filetype="pdf") as doc:
+                    for page in doc:
+                        text += page.get_text() + " "
+                
+                if not text.strip():
+                    logger.error(f"Text extraction empty for {file.filename}")
                     failed_files.append(file.filename)
                     continue
                 
-                # Split into chunks
+                # 3. Split into chunks
                 chunks = PDFProcessor.split_text(text)
                 
-                # Extract metadata
+                # 4. Metadata
                 metadata = PDFProcessor.extract_metadata(text, file.filename)
                 
-                # Add to vector store
+                # 5. Add to vector store
                 await matcher.add_document_async(
                     text=text,
                     chunks=chunks,
@@ -127,27 +126,25 @@ async def process_pdf_task(
                 )
                 
                 processed_files.append(file.filename)
-                
-                # Clean up temporary file
-                os.remove(file_path)
+                logger.info(f"Successfully indexed: {file.filename}")
                 
             except Exception as e:
                 logger.error(f"Failed to process {file.filename}: {e}")
                 failed_files.append(file.filename)
         
-        # Update final status
-        if processed_files:
-            task_store[task_id].status = "completed"
-            task_store[task_id].message = f"Successfully processed {len(processed_files)} files"
-            if failed_files:
-                task_store[task_id].message += f". Failed: {', '.join(failed_files)}"
-        else:
-            task_store[task_id].status = "failed"
-            task_store[task_id].message = "No files were processed successfully"
-        
+        # FINAL STATUS UPDATE (Only once, outside the loop)
+        task_store[task_id].status = "completed" if processed_files else "failed"
         task_store[task_id].processed_files = len(files)
         
+        if processed_files:
+            msg = f"Successfully processed {len(processed_files)} files."
+            if failed_files:
+                msg += f" Failed: {', '.join(failed_files)}"
+            task_store[task_id].message = msg
+        else:
+            task_store[task_id].message = "No files were processed successfully."
+
     except Exception as e:
-        logger.error(f"Task {task_id} failed: {e}")
+        logger.error(f"Critical Task {task_id} failure: {e}")
         task_store[task_id].status = "failed"
-        task_store[task_id].message = f"Processing failed: {str(e)}"
+        task_store[task_id].message = f"Worker Error: {str(e)}"
