@@ -30,7 +30,7 @@ export function ResultsGrid({ candidates, isSearching }: ResultsGridProps) {
     )
   }
 
-  if (candidates.length === 0) {
+  if (!candidates || candidates.length === 0) {
     return (
       <div className="flex flex-1 h-full">
         <div className="flex flex-1 flex-col justify-center items-center p-6">
@@ -66,7 +66,7 @@ export function ResultsGrid({ candidates, isSearching }: ResultsGridProps) {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {candidates.map((candidate, index) => (
+        {candidates?.map((candidate, index) => (
           <div key={candidate.id || index} className="transform transition-all duration-300 hover:scale-105">
             <CandidateCard candidate={candidate} />
           </div>
