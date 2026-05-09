@@ -326,10 +326,10 @@ class VectorMatcher:
             if conditions:
                 qdrant_filter = Filter(must=conditions)
         
-        # Search Qdrant
-        search_result = self.qdrant_client.search(
+        # Search Qdrant using query_points method
+        search_result = await self.qdrant_client.query_points(
             collection_name=self.collection_name,
-            query_vector=query_embedding,
+            query=query_vector,
             query_filter=qdrant_filter,
             limit=1000,  # Get more results for better aggregation
             with_payload=True,
@@ -339,7 +339,8 @@ class VectorMatcher:
         # Extract semantic scores and chunk info
         semantic_scores = {}
         chunk_info = {}
-        for hit in search_result:
+        # Iterate over points from QueryResponse
+        for hit in search_result.points:
             filename = hit.payload.get('filename')
             semantic_scores[hit.id] = hit.score
             chunk_info[hit.id] = hit.payload
