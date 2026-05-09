@@ -86,16 +86,47 @@ async def health_check():
     return {"status": "healthy", "vector_store": "connected" if matcher else "disconnected"}
 
 # Upload endpoint
-@app.post("/upload", response_model=UploadResponse)
-async def upload_pdfs(
+# Complete resume upload and processing route
+@app.post("/upload-resume", response_model=dict)
+async def upload_resume(
     background_tasks: BackgroundTasks,
-    files: List[UploadFile] = File(...)
+    file: UploadFile = File(...)
 ):
-    """Upload PDF files for processing"""
-    if not files:
-        raise HTTPException(status_code=400, detail="No files provided")
+    """Upload and process PDF resume to vector database"""
+    if not file:
+        raise HTTPException(status_code=400, detail="No file provided")
     
-    task_id = str(uuid.uuid4())
+    try:
+        # USE THE GLOBAL MATCHER INSTEAD OF REDEFINING EVERYTHING
+        if not matcher:
+            raise HTTPException(status_code=503, detail="Vector store not initialized")
+
+        # 1. Read file content
+        import pypdf2
+        reader = pypdf2.PdfReader(file.file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text()
+        
+        if not text.strip():
+            raise HTTPException(status_code=400, detail="No text extracted")
+
+        # 2. Use the EXISTING VectorMatcher (BGE-M3) to ensure 1024-dim
+        # This replaces the old MiniLM code that was causing the 0% match
+        task_id = str(uuid.uuid4())
+        
+        # We wrap this in a list because the process_pdf_task expects a list of files
+        background_tasks.add_task(process_pdf_task, task_id, [file], task_store, matcher)
+        
+        return {
+            "status": "success",
+            "message": f"Resume '{file.filename}' is being indexed with BGE-M3 (1024-dim)",
+            "task_id": task_id
+        }
+        
+    except Exception as e:
+        logging.error(f"Resume processing failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
     
     # Store initial task status
     task_store[task_id] = TaskStatus(
