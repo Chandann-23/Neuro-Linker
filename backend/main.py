@@ -22,13 +22,6 @@ from dotenv import load_dotenv
 # Add current directory to path just in case
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Force install zhipuai if not available
-try:
-    from zhipuai import ZhipuAI
-except ImportError as e:
-    print(f"CRITICAL: zhipuai not found in path: {sys.path}")
-    raise e
-
 # Load environment variables
 load_dotenv()
 
@@ -41,28 +34,15 @@ from observability import observability, db_logger
 matcher: Optional[VectorMatcher] = None
 task_store: Dict[str, TaskStatus] = {}
 
-# GLM 5.1 Client
-glm_client = None
-
 # Hugging Face Inference Client
 hf_client = None
-
-async def get_glm_client():
-    """Initialize GLM 5.1 client"""
-    global glm_client
-    if glm_client is None:
-        glm_client = ZhipuAI(
-            api_key=os.getenv('ZHIPU_API_KEY'),
-            base_url="https://open.bigmodel.cn/api/paas/v4/"
-        )
-    return glm_client
 
 async def get_hf_client():
     """Initialize Hugging Face Inference client"""
     global hf_client
     if hf_client is None:
-        from openai import OpenAI
-        hf_client = OpenAI(
+        from openai import AsyncOpenAI
+        hf_client = AsyncOpenAI(
             base_url='https://router.huggingface.co/v1',
             api_key=os.getenv('HF_TOKEN')
         )
@@ -318,8 +298,8 @@ async def search_candidates(request: SearchRequest):
                 )
             ]
         
-        # Get GLM 5.1 client
-        client = await get_glm_client()
+        # Get Hugging Face client
+        client = await get_hf_client()
         
         # Prepare candidate context for GLM analysis
         candidate_context = "\n\n".join([
