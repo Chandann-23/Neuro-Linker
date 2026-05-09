@@ -85,65 +85,31 @@ class FeedbackRequest(BaseModel):
 async def health_check():
     return {"status": "healthy", "vector_store": "connected" if matcher else "disconnected"}
 
-# Upload endpoint
-# Complete resume upload and processing route
+# Upload endpoint - Fixed to use global matcher synchronously
 @app.post("/upload-resume", response_model=dict)
-async def upload_resume(
-    background_tasks: BackgroundTasks,
-    file: UploadFile = File(...)
-):
-    """Upload and process PDF resume to vector database"""
+async def upload_resume(file: UploadFile = File(...)):
+    """Upload and process PDF resume to vector database using BGE-M3 (1024-dim)"""
     if not file:
         raise HTTPException(status_code=400, detail="No file provided")
     
+    if not matcher:
+        raise HTTPException(status_code=503, detail="Vector store not initialized")
+    
     try:
-        # USE THE GLOBAL MATCHER INSTEAD OF REDEFINING EVERYTHING
-        if not matcher:
-            raise HTTPException(status_code=503, detail="Vector store not initialized")
-
-        # 1. Read file content
-        import pypdf2
-        reader = pypdf2.PdfReader(file.file)
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text()
-        
-        if not text.strip():
-            raise HTTPException(status_code=400, detail="No text extracted")
-
-        # 2. Use the EXISTING VectorMatcher (BGE-M3) to ensure 1024-dim
-        # This replaces the old MiniLM code that was causing the 0% match
-        task_id = str(uuid.uuid4())
-        
-        # We wrap this in a list because the process_pdf_task expects a list of files
-        background_tasks.add_task(process_pdf_task, task_id, [file], task_store, matcher)
+        # Use the global matcher directly for synchronous processing
+        result = await matcher.ingest_pdf(file)
         
         return {
             "status": "success",
-            "message": f"Resume '{file.filename}' is being indexed with BGE-M3 (1024-dim)",
-            "task_id": task_id
+            "message": f"Resume '{file.filename}' processed and indexed with BGE-M3 (1024-dim)",
+            "filename": file.filename,
+            "chunks_count": result.get("chunks_count", 0)
         }
         
     except Exception as e:
         logging.error(f"Resume processing failed: {str(e)}")
+        logging.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
-    
-    # Store initial task status
-    task_store[task_id] = TaskStatus(
-        task_id=task_id,
-        status="processing",
-        total_files=len(files),
-        processed_files=0,
-        message="Starting PDF processing..."
-    )
-    
-    # Add background task for processing
-    background_tasks.add_task(process_pdf_task, task_id, files, task_store, matcher)
-    
-    return UploadResponse(
-        task_id=task_id,
-        message=f"Processing {len(files)} files. Use /status/{task_id} to track progress."
-    )
 
 # Single file upload endpoint
 @app.post("/upload-single", response_model=UploadResponse)
@@ -174,79 +140,6 @@ async def upload_single_pdf(
         message=f"Processing {file.filename}. Use /status/{task_id} to track progress."
     )
 
-# Complete resume upload and processing route
-@app.post("/upload-resume", response_model=dict)
-async def upload_resume(
-    background_tasks: BackgroundTasks,
-    file: UploadFile = File(...)
-):
-    """Upload and process PDF resume to vector database"""
-    if not file:
-        raise HTTPException(status_code=400, detail="No file provided")
-    
-    try:
-        # Extract text from PDF
-        import pypdf2
-        reader = pypdf2.PdfReader(file.file)
-        text = ""
-        for page in reader.pages:
-            text += page.extract_text()
-        
-        if not text.strip():
-            raise HTTPException(status_code=400, detail="No text could be extracted from PDF")
-        
-        # Generate embeddings
-        from sentence_transformers import SentenceTransformer
-        embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-        embeddings = embedding_model.encode([text])
-        
-        # Store in Qdrant
-        qdrant_client = QdrantClient(
-            url=os.getenv('QDRANT_URL', 'http://localhost:6333'),
-            api_key=os.getenv('QDRANT_API_KEY', ''),
-            prefer_grpc=False
-        )
-        
-        # Create collection if not exists
-        try:
-            qdrant_client.get_collection(collection_name="resume_chunks")
-        except Exception:
-            qdrant_client.create_collection(
-                collection_name="resume_chunks",
-                vectors_config=VectorParams(size=1024, distance=Distance.COSINE),
-                hnsw_config={"m": 16, "ef_construction": 256}
-            )
-        
-        # Prepare points for upsert
-        points = [
-            PointStruct(
-                id=str(uuid.uuid4()),
-                vector=embedding.tolist()[0],
-                payload={
-                    "filename": file.filename,
-                    "name": file.filename.replace('.pdf', ''),
-                    "text": text[:1000] + "..." if len(text) > 1000 else text
-                }
-            )
-        ]
-        
-        # Upsert to Qdrant
-        qdrant_client.upsert(
-            collection_name="resume_chunks",
-            points=points
-        )
-        
-        return {
-            "status": "success",
-            "message": f"Resume '{file.filename}' processed and indexed successfully",
-            "filename": file.filename,
-            "chunks_count": len(text.split('. ')) if text else 1
-        }
-        
-    except Exception as e:
-        logging.error(f"Resume processing failed: {str(e)}")
-        logging.error(f"Full traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Processing failed: {str(e)}")
 
 # Status endpoint
 @app.get("/status/{task_id}", response_model=TaskStatus)

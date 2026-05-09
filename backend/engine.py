@@ -13,6 +13,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Filter, FieldCondition, MatchValue
+from fastapi import UploadFile
 import time
 import logging
 
@@ -445,3 +446,44 @@ class VectorMatcher:
         if not self.latency_history:
             return 0.0
         return sum(self.latency_history) / len(self.latency_history)
+    
+    async def ingest_pdf(self, file: UploadFile) -> Dict[str, Any]:
+        """Ingest a single PDF file into the vector store using BGE-M3 (1024-dim)"""
+        if not self.qdrant_client:
+            raise Exception("Qdrant client not initialized")
+        
+        try:
+            # 1. Extract text from PDF
+            import pypdf2
+            reader = pypdf2.PdfReader(file.file)
+            text = ""
+            for page in reader.pages:
+                text += page.extract_text()
+            
+            if not text.strip():
+                raise ValueError("No text extracted from PDF")
+            
+            # 2. Split text into chunks
+            chunks = TextSplitter.split_text(text, chunk_size=500, chunk_overlap=50)
+            
+            # 3. Create metadata
+            metadata = {
+                "filename": file.filename,
+                "text_length": len(text),
+                "chunks_count": len(chunks)
+            }
+            
+            # 4. Add to vector store using existing method (ensures 1024-dim BGE-M3)
+            await self.add_document_async(text, chunks, metadata)
+            
+            return {
+                "status": "success",
+                "filename": file.filename,
+                "chunks_count": len(chunks),
+                "text_length": len(text),
+                "dimensions": 1024
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Failed to ingest PDF {file.filename}: {e}")
+            raise e
