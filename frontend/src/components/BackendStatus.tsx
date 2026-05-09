@@ -11,7 +11,12 @@ export function BackendStatus() {
   useEffect(() => {
     const checkBackendHealth = async () => {
       try {
-        const response = await fetch('/health')
+        const response = await fetch('https://chandann-23-neuro-linker-api.hf.space/health')
+        
+        if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
+          throw new Error('Backend returned non-JSON or error')
+        }
+        
         const data = await response.json()
         
         if (data.status === 'healthy') {

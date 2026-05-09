@@ -1,6 +1,6 @@
 // API Configuration for NEURO-LINKER Backend
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chandann-23-neuro-linker-api.hf.space'
+const API_BASE = 'https://chandann-23-neuro-linker-api.hf.space';
 
 export interface SearchRequest {
   query: string
@@ -31,7 +31,7 @@ export interface SearchResult {
 export class ApiService {
   static async search(query: string, filters: any = {}): Promise<SearchResult[]> {
     try {
-      const response = await fetch(`${API_BASE_URL}/search`, {
+      const response = await fetch(`${API_BASE}/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,11 +44,9 @@ export class ApiService {
         signal: AbortSignal.timeout(60000) // 60 second timeout
       })
 
-      // Add response validation to check content type
-      const contentType = response.headers.get('content-type');
-      if (!response.ok || !contentType?.includes('application/json')) {
-        console.error('Non-JSON response received:', response.status, response.statusText);
-        return []; // Safety fallback
+      // Fail-fast JSON validator
+      if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) {
+        throw new Error('Backend returned non-JSON or error');
       }
 
       const data = await response.json();
@@ -66,7 +64,7 @@ export class ApiService {
         formData.append(`files`, file)
       })
 
-      const response = await fetch(`${API_BASE_URL}/upload`, {
+      const response = await fetch(`${API_BASE}/upload`, {
         method: 'POST',
         body: formData,
       })
