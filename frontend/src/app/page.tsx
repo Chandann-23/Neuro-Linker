@@ -5,6 +5,7 @@ import { SearchFilterPanel } from '@/components/SearchFilterPanel'
 import { ResultsGrid } from '@/components/ResultsGrid'
 import { UploadModal } from '@/components/UploadModal'
 import { Upload, FileText, Database } from 'lucide-react'
+import { ApiService, SearchResult } from '@/api'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,7 @@ interface FilterState {
 }
 
 export default function RecruiterDashboard() {
-  const [candidates, setCandidates] = useState([])
+  const [candidates, setCandidates] = useState<SearchResult[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [filters, setFilters] = useState<FilterState>({
     experienceLevel: '',
@@ -36,27 +37,11 @@ export default function RecruiterDashboard() {
     setIsSearching(true)
     
     try {
-      const response = await fetch('/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          query: query,
-          alpha: 0.7,
-          filters: {
-            experience_level: filters.experienceLevel,
-            location: filters.location,
-            skills: filters.skills
-          }
-        }),
+      const results = await ApiService.search(query, {
+        experience_level: filters.experienceLevel,
+        location: filters.location,
+        skills: filters.skills
       })
-      
-      if (!response.ok) {
-        throw new Error('Search failed')
-      }
-      
-      const results = await response.json()
       setCandidates(results)
     } catch (error) {
       console.error('Search error:', error)
@@ -67,7 +52,7 @@ export default function RecruiterDashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Search & Filter Panel */}
       <div className="w-96 h-full">
         <div className="flex items-center justify-between mb-6">

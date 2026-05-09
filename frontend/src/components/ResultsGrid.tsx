@@ -32,18 +32,18 @@ export function ResultsGrid({ candidates, isSearching }: ResultsGridProps) {
 
   if (candidates.length === 0) {
     return (
-      <div className="flex-1 p-6">
-        <div className="flex items-center justify-center h-full">
+      <div className="flex flex-1 h-full">
+        <div className="flex flex-1 flex-col justify-center items-center p-6">
           <div className="text-center max-w-md">
             <div className="mb-8">
-              <div className="w-20 h-20 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex items-center justify-center mx-auto">
-                <div className="text-4xl text-white/60 mb-3">🔍</div>
-                <div className="text-white/80">
-                  <div className="text-lg font-semibold text-white mb-2">No Candidates Found</div>
-                  <p className="text-white/60 max-w-sm">
-                    Try adjusting your search query or filters to find matching candidates from the database.
-                  </p>
-                </div>
+              <div className="w-24 h-24 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl flex flex-col items-center justify-center mx-auto">
+                <div className="text-5xl text-white/60 mb-3">🔍</div>
+              </div>
+              <div className="text-white/80 mt-6">
+                <div className="text-2xl font-semibold text-white mb-3">No Candidates Found</div>
+                <p className="text-white/60 max-w-sm mx-auto text-center">
+                  Try adjusting your search query or filters to find matching candidates from the database.
+                </p>
               </div>
             </div>
           </div>
