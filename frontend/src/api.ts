@@ -44,15 +44,18 @@ export class ApiService {
         signal: AbortSignal.timeout(60000) // 60 second timeout
       })
 
-      if (!response.ok) {
-        throw new Error(`Search failed: ${response.status} ${response.statusText}`)
+      // Add response validation to check content type
+      const contentType = response.headers.get('content-type');
+      if (!response.ok || !contentType?.includes('application/json')) {
+        console.error('Non-JSON response received:', response.status, response.statusText);
+        return []; // Safety fallback
       }
 
-      const results = await response.json()
-      return results
+      const data = await response.json();
+      return Array.isArray(data) ? data : []; // Default array guard
     } catch (error) {
       console.error('API Error:', error)
-      throw error
+      return []; // Safety fallback
     }
   }
 

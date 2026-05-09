@@ -51,7 +51,9 @@ export function SearchResults({ results, onFeedback }: SearchResultsProps) {
     return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(filename)}`
   }
 
-  if (results.length === 0) {
+  // Defensive programming: Initialize with empty array and guard against undefined
+const displayResults = Array.isArray(results) ? results : [];
+if (displayResults.length === 0) {
     return (
       <div className="glass p-8 text-center">
         <Target className="mx-auto mb-4" size={48} style={{ color: 'var(--accent-purple)' }} />
@@ -63,7 +65,7 @@ export function SearchResults({ results, onFeedback }: SearchResultsProps) {
 
   return (
     <div className="space-y-6">
-      {results.map((result, index) => (
+      {displayResults?.map((result, index) => (
         <div key={result.filename} className="result-card fade-in">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center space-x-4">
