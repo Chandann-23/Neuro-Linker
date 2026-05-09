@@ -7,11 +7,11 @@ export function BackendStatus() {
   const [isConnected, setIsConnected] = useState(true)
   const [lastPing, setLastPing] = useState(Date.now())
   const [consecutiveFailures, setConsecutiveFailures] = useState(0)
-  const [isMounted, setIsMounted] = useState(false)
+  const [hasMounted, setHasMounted] = useState(false)
 
-  // Hydration guard - only run on client side
+  // Mount guard - only run on client side
   useEffect(() => {
-    setIsMounted(true)
+    setHasMounted(true)
   }, [])
 
   const checkBackendHealth = async () => {
@@ -44,7 +44,7 @@ export function BackendStatus() {
   }
 
   useEffect(() => {
-    if (!isMounted) return // Only run after component is mounted
+    if (!hasMounted) return // Only run after component is mounted
 
     // Initial ping
     checkBackendHealth()
@@ -93,6 +93,9 @@ export function BackendStatus() {
       return 'Reconnecting...'
     }
   }
+
+  // Don't render status on server side to prevent hydration mismatch
+  if (!hasMounted) return null;
 
   return (
     <div className="flex items-center space-x-2 p-2 bg-white/5 rounded-lg" suppressHydrationWarning={true}>

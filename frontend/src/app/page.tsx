@@ -37,7 +37,7 @@ export default function RecruiterDashboard() {
   useEffect(() => {
     const warmUpBackend = async () => {
       try {
-        await fetch('/health')
+        await fetch('https://chandann-23-neuro-linker-api.hf.space/health')
       } catch (error) {
         console.log('Warm-up failed:', error)
       }
