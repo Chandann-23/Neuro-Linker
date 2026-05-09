@@ -33,6 +33,20 @@ export default function RecruiterDashboard() {
     setUploadModalOpen(false)
   }
 
+  // Warm-up request to preload BGE-M3 model
+  useEffect(() => {
+    const warmUpBackend = async () => {
+      try {
+        await fetch('/health')
+      } catch (error) {
+        console.log('Warm-up failed:', error)
+      }
+    }
+    
+    // Send warm-up request as soon as page loads
+    warmUpBackend()
+  }, [])
+
   const handleSearch = async (query: string) => {
     if (!query.trim()) return
     
