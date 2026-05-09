@@ -38,14 +38,17 @@ export default function RecruiterDashboard() {
     setIsSearching(true)
     
     try {
-      const results = await ApiService.search(query, {
+      const data = await ApiService.search(query, {
         experience_level: filters.experienceLevel,
         location: filters.location,
         skills: filters.skills
       })
+      // Force array initialization to prevent crashes
+      const results = Array.isArray(data) ? data : []
       setCandidates(results)
     } catch (error) {
       console.error('Search error:', error)
+      // Graceful error recovery with empty array fallback
       setCandidates([])
     } finally {
       setIsSearching(false)

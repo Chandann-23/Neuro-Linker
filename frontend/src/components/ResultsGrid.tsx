@@ -15,13 +15,13 @@ export function ResultsGrid({ candidates, isSearching }: ResultsGridProps) {
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 animate-pulse">
               <div className="space-y-4">
-                <div className="h-6 bg-white/20 rounded-lg w-3/4"></div>
-                <div className="h-4 bg-white/10 rounded-lg w-1/2"></div>
+                <div className="h-6 bg-white/20 rounded-lg"></div>
+                <div className="h-3 bg-white/10 rounded w-3/4"></div>
                 <div className="space-y-2">
-                  <div className="h-3 bg-white/10 rounded w-full"></div>
                   <div className="h-3 bg-white/10 rounded w-5/6"></div>
+                  <div className="h-3 bg-white/10 rounded w-4/6"></div>
+                  <div className="h-3 bg-white/10 rounded w-full"></div>
                 </div>
-                <div className="h-20 bg-white/5 rounded-lg"></div>
               </div>
             </div>
           ))}
@@ -66,7 +66,7 @@ export function ResultsGrid({ candidates, isSearching }: ResultsGridProps) {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {candidates?.map((candidate, index) => (
+        {candidates && candidates.length > 0 && candidates?.map((candidate, index) => (
           <div key={candidate.id || index} className="transform transition-all duration-300 hover:scale-105">
             <CandidateCard candidate={candidate} />
           </div>
